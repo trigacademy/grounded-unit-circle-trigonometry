@@ -1,0 +1,160 @@
+---
+title: "Immediate vs. Delayed Intervention Trig Academy Study (39 students)"
+
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_depth: 1
+    toc_float:
+      collapsed: true
+    code_folding: hide
+    
+
+---
+The analyses below were performed on 39 community college students who took part in our immediate vs. delayed trigonometry curriculum intervention study. Upon completing our Aptitude and Math Skills Assessment (AMSA), students were randomly assigned to either the lesson early (LE) group or the lesson late (LL) group. Twenty students in the LE group completed our six chapter unit circle curriuclum, took a trigonometric identities post-test (TI1), waited two weeks, then took an additional trigonometic identities post-test (TI2). Concurrently, 19 students in the lesson late (LL) group waited two weeks, took TI1 (framed as a "pre-survey"), completed our curriculum, then took TI2. 
+
+Participants in group LE completed a set of lesson materials prior to TI1, while participants in group LL simply waited. Thus a comparison of performance of the two groups on TI1 allows assessment of the effects of completing the lesson materials on performance on our Trig Identities Test. After TI1, participants in group LE waited, while participants in group LL completed the lesson materials. This second phase allows assessment of retention in the LE group and of within-participant improvement from TI1 to TI2 in the LL group.
+
+As part of the AMSA, students completed four basic math tasks with written support: marking X-Y coordinate pairs, marking angles, answering basic questions about trigonometric ratios on a right triangle, and approximating values of sine and cosine on the unit circle. We refer to the numerical average of these tasks as students' Supported Math (SM) score. Based on results from participants who completed our learning materials and trig identities test prior to the current experiment, we set a screening threshold of 50.0% correct on the SM score.
+
+The code in the following analyses uses the following data frames: pretest.rds and and posttest39.rds. The raw data can be downloaded from the "Raw Data" tab, and the process used to get the raw data into the pretest.rds and posttest39.rds format can be found in the "Data Process" tab. 
+
+# 1. Did the lesson-early group perform better in the first within study trig identities test than the lesson-late group?
+
+To assess this, we used a logistic mixed model to predict TI1 score for all participants, using lesson timing (LE group vs LL group), SM score, and their interaction. We included a random intercept for each subject.
+
+If the lesson enhanced student performance, we would expect a positive effect of lesson timing, where the LE group tends to achieve higher accuracy than the LL group. 
+
+We conducted the above analysis twice, once without consideration of problem type, and once with problem type as a random factor. The first of these analyses is a simple assessment of the effect of the lesson materials, but results may include variability due to problem type that clouds assessment of the effect of the lesson. With problem type as a random factor, we will allow the intercept, lesson timing, SM score and their interaction to vary across problem type. By fitting these parameters, we may be able to remove the problem type variance and enhance the clarity of our assessment of the lesson effect. A consistent effect regardless of the inclusion of problem type as a random factor would indicate robustness of the effect.
+
+```{r,message=FALSE,warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(tidyr)
+
+pretestData <- readRDS("pretest.rds")
+
+subjdf = pretestData %>%
+  mutate(sm = MarkXYII + MarkThetaII + `Right Triangle Trig III` + `Right Triangle Trig V`)
+
+posttestData = readRDS("posttest39.rds")
+
+subjdf <- merge(subjdf,posttestData,by="user")
+
+longdf = subjdf %>%
+  mutate(csm = as.vector(scale(sm,scale=TRUE)))
+```
+
+
+```{r,fig.width=4, fig.height=6.5}
+df1 <- posttestData[posttestData$test=="TI1",]
+
+df1 %>%
+  group_by(user,group) %>%
+  summarize(acc=mean(correct)) %>%
+  ggplot(.,aes(group,acc))+
+  geom_boxplot(notch=FALSE,varwidth=FALSE)+
+  geom_dotplot(binaxis='y',stackdir='center',dotsize=0.5,binwidth=1/40)+
+  stat_summary(geom='point',fun.y='mean',shape=4,size=3,color='blue')+
+  scale_y_continuous(limits=c(0,1))+ # ,expand=c(0,0)
+  labs(x='Group',y='Accuracy')
+```
+
+# 2.	Did the lesson-late group show improvement from the first within-study trig identities test to the second within-study trig identities test?
+
+To assess this, we considered the LL group only, and we used a logistic mixed model to predict TI score, using test timing (TI2 vs TI1), SM score, and their interaction. We included a random intercept and random effect of test timing for each subject. As with question #1, we conducted this analysis twice, once with problem type as a random factor and once without.
+
+If the lesson enhanced student performance, we would expect a positive effect of test timing, where students achieve higher accuracy on TI2 than on TI1.
+
+```{r}
+df2 = longdf %>%
+  filter(group=='LL') %>%
+  mutate(csm = as.vector(scale(sm,scale=TRUE)),
+         correct = as.numeric(correct))
+```
+
+```{r}
+temp = df2 %>%
+  group_by(user,test,sm) %>%
+  #summarize(acc=mean(correct)) %>%
+  summarize(acc=qlogis((sum(correct)+1)/(n()+2))) %>%
+  spread(key=test,value=acc) %>%
+  rename(b1=`TI1`,b2=`TI2`) %>%
+  mutate(diff=b2-b1)
+
+p = temp %>%
+  ggplot(.,aes(sm,diff))+
+  geom_point()+
+  # geom_text(aes(label=user)) + 
+  geom_smooth(method='lm') +
+  geom_hline(yintercept=0,color='red',linetype=2)+
+  labs(x='SM score',y='TI2 - TI1 Improvement in\nLog Odds of Correct Response',title='Within LL Group')
+
+ymargin = cowplot::axis_canvas(p,axis='y')+
+  geom_boxplot(data=temp,aes(1,diff),notch=TRUE,varwidth=FALSE)+
+  geom_dotplot(data=temp,aes(1,diff),binaxis='y',stackdir='center',dotsize=1.25,binwidth=1/16)+ # ,dotsize=0.5,binwidth=1/40
+  stat_summary(data=temp,aes(1,diff),geom='point',fun.y='mean',shape=4,size=3,color='blue')+ # ,size=3
+  geom_hline(yintercept=0,color='red',linetype=2)
+p1 = cowplot::insert_yaxis_grob(p,ymargin,grid::unit(.25,'null'),position='right')
+cowplot::ggdraw(p1)
+
+```
+
+# 3. How did the scores of the lesson early group change between the first and second within-study assessment?
+
+To assess this, we considered the LE group only, and we used a logistic mixed model to predict TI using test timing (TI2 vs TI1), SM score, and their interaction. We included a random intercept and random effect of test timing for each subject. As with question #1 and question #2, we conducted this analysis twice, once with problem type as a random factor and once without.
+
+We are interested in the size of the effect of test timing. If retention is good, we would expect student performance to deteriorate only slightly.  We are also interested in estimating the size of the main effect of SM score and the interaction of SM score with test timing.
+
+```{r}
+df3 = longdf %>%
+  filter(group=='LE') %>%
+  mutate(csm = as.vector(scale(sm,scale=TRUE)),
+         correct = as.numeric(correct))
+df3 %>%
+  group_by(user,test,sm) %>%
+  summarize(acc=mean(correct)) %>%
+  spread(key=test,value=acc) %>%
+  rename(b1=`TI1`,b2=`TI2`) %>%
+  ggplot(.,aes(b1,b2))+
+  #geom_point(aes(color=sm))+
+  geom_text(aes(color=sm,label=user))+
+  coord_cartesian(xlim=c(0,1),ylim=c(0,1))
+```
+
+# What is the relationship between circle tool use and accuracy?
+
+Half of the problems in TI1 and TI2 were completed with the support of a unit circle tool available for use and the other half were completed with no external support. We are interested in the role of circle support and the effect of participant’s use of the circle when available on their performance. 
+
+
+```{r,message=FALSE,warning=FALSE}
+
+rstoolacc <- readRDS("rstoolacc.rds")
+fit = ggeffects::ggpredict(rstoolacc,terms='beventbin',type='fe')
+
+longdf$support <- ifelse(longdf$support=="Circle",TRUE,ifelse(longdf$support=="NoCircle",FALSE,longdf$support)) 
+usedf = longdf %>%
+  filter((group=='LE' & test=='TI1') | (group=='LL' & test=='TI2')) %>%
+  mutate(csm = as.vector(scale(sm,scale=TRUE)),
+         circle = factor(support, levels=c(TRUE,FALSE)),
+         circle=`contrasts<-`(circle,,c(1,-1)),
+         ctrial = as.vector(scale(sm,scale=TRUE)))
+
+plot <- usedf %>%
+              filter(circle=='TRUE') %>%
+              mutate(eventbin = factor(nevents>0,levels=c(FALSE,TRUE)))%>%
+              group_by(user) %>%
+              summarize(beventbin = mean(nevents>0),
+                        acc = mean(correct)) %>%
+  ggplot(aes(beventbin,acc,group=beventbin))+
+  geom_dotplot(binaxis='y',stackdir='center',dotsize=0.5,binwidth=1/40)+
+  # geom_smooth(method='lm') +
+  geom_line(data=fit,aes(x=x,y=predicted,group=1),color='blue')+
+  geom_ribbon(data=fit,aes(x=x,y=predicted,ymin=conf.low,ymax=conf.high,group=1),alpha=0.12,linetype=0)+
+  scale_x_continuous(limits=c(0,1))+ # limits=c(0,1),
+  scale_y_continuous(limits=c(0,1))+ # limits=c(0,1),
+  labs(x='Proportion of trials subject used circle tool\n(Between-subject circle tool use)',y='Accuracy')
+plot
+```

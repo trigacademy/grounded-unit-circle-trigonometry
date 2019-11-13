@@ -1,0 +1,16 @@
+name: "unit-circle-trigonometry"
+navbar:
+  title: "Unit Circle Trigonometry"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "Comparison Study Cohort"
+      href: ComparisonCohort.html
+    - text: "Early Cohorts"
+      href: EarlyCohorts.html
+    - text: "All Cohorts"
+      href: AllCohorts.html
+    - text: "Data Process"
+      href: dataProcess.html
+    - text: "Raw Data"
+      href: rawData.html

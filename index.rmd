@@ -1,0 +1,40 @@
+---
+title: "Unit Circle Trigonometry"
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_depth: 1
+    toc_float:
+      collapsed: true
+    code_folding: hide
+    
+    
+---
+
+
+This website contains the analyses of five cohorts of students who took our "Trig Academy" study between fall 2016 and spring 2018. During this study, high school and community college students completed our Aptitude and Math Skills Assessment (AMSA), which included a battery of math and atpitutde tasks, completed a 6-chapter online, unit circle-based curriculum, and took one or two posttests. The unit circle-baesd curriculum was designed to help students create a comprehensive mental model they can use to ultimately visualize trigonometric expressions, and the posttest was designed to measure student's understanding of trigonometric expressions. 
+
+The five cohorts who completed this study between fall 2016 and spring 2018 include: 4 community college students from fall 2016, 25 high school students from fall 2016, 19 high school students from summer 2017, 4 high school students from fall 2017, and 39 community college students from fall 2017 - spring 2018. We have divided these cohorts into three groups for the purposes of analysis: Comparison Study Cohort, Early Cohorts, and All Cohorts Combined. 
+
+# Comparison Study Cohort
+
+The **Comparison Study Cohort** tab contains analysis on the results of 39 community college students who took part in our immediate vs. delayed trigonometry curriculum intervention study. Upon completing our Aptitude and Math Skills Assessment (AMSA), students were randomly assigned to either the lesson early (LE) group or the lesson late (LL) group. Twenty students in the LE group completed our six chapter unit circle curriuclum, took a trigonometric identities post-test (TI1), waited two weeks, then took an additional trigonometic identities post-test (TI2). Concurrently, 19 students in the lesson late (LL) group waited two weeks, took TI1 (framed as a "pre-survey"), completed our curriculum, then took TI2. Comparison of performance of the two groups on TI1 allows assessment of the effects of completing the lesson materials on performance on our posttest while controlling for repeat-testing effects and for the potential effect of the intervening time between signing up for the study and taking the posttest. 
+
+# Early Cohorts
+
+The **Early Cohorts** tab contains analysis on the results of 62 students from the following four cohorts: 14 community college students from fall 2016, 25 high school students from fall 2016, 19 high school students from summer 2017, and 4 high school stuents from fall 2017. All 62 of these students took an immediate intervention version of the study, with no comparison group. The 39 students who completed the immediate vs. delayed intervention study were excluded from these analyses because we requried these students to meet a threshold of 50.0% on the Supported Math (SM) portions of the AMSA to participate in our study. This requirement would likely skew the effect SM would have on TI1 and lesson performance. Combining the results of remaining four cohorts helps us look at the effects of individual differences over a wider range of backgrounds than an analysis that looked at only the 39 students who were screened based on their SM score. 
+
+# All Cohorts
+
+The **All Cohorts** tab contains analyses on the combined data from all five cohorts. This combined data set allows us to look at questions that don't depend on the immediate vs. delayed intervention framework with a higher degree of power. These questions include which lesson questions and which posttest questions were most difficult. 
+
+# Data Process
+
+The **Data Process** tab contains the code used to transform the raw data into the data objects that are used in the analyses on the "Comparison Study Cohort", "Early Cohorts", and "All Cohorts" pages of this website. Run this code to get the data objects (pretest.rds, lesson.rds, posttestAll.rds, posttest39.rds) that are used in these analyses. 
+
+# Raw Data
+
+The **Raw Data** tab contains links to download the .csv files that contain the data pulled directly from our database. 
+
+To see our pre-registration with the OSF, please visit the following link: https://osf.io/tj3cm/

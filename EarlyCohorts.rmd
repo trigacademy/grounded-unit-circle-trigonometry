@@ -1,0 +1,137 @@
+---
+title: "Early Cohorts (48 HS and 14 CC Students)"
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_depth: 1
+    toc_float:
+      collapsed: true
+    code_folding: hide
+    
+---
+The analyses on this page were performed on 62 students from the following four cohorts: 14 community college students from fall 2016, 25 high school students from fall 2016, 19 high school students from summer 2017, and 4 high school stuents from fall 2017. The 39 students who completed the immediate vs. delayed intervention study were excluded from these analyses because we requried these students to meet a threshold of 50.0% on the SM portions of the AMSA to participate in our study. This requirement would likely skew the effect SM would have on TI1 and lesson performance. 
+
+The code in the following analyses uses the following data frames: pretest.rds, lesson.rds, and posttestAll.rds. The raw data can be downloaded from the "Raw Data" tab, and the process used to get the raw data into the pretest.rds, lesson.rds, and posttestAll.rds format can be found in the "Data Process" tab. 
+
+# How does TI performance relate to SM score? 
+```{r,message=FALSE,warning=FALSE}
+
+library(lme4)
+library(dplyr)
+
+userIDs <- read.csv("combinedUserIDs.csv")
+#exclude those who didn't meet threshold
+noThreshold <- c(1719,1653,1735,1998,2038)
+userIDs <- userIDs [! userIDs$TrigID %in% noThreshold,]
+
+tahomaIDs <- userIDs[(userIDs$Group == "TaFall16") | (userIDs$Group == "TaSum17") | (userIDs$Group == "TaFall17"),]
+tahomaIDs <- tahomaIDs$TrigID
+repIDs <- userIDs[(userIDs$Group == "REP16"),]
+repIDs <- repIDs$TrigID
+
+combined62 <- c(tahomaIDs,repIDs)
+
+posttestResults <- readRDS("posttestAll.rds")
+#reduce to 62
+posttestResults62 <- posttestResults[posttestResults$user %in% combined62,]
+posttestResults62 <- posttestResults62 %>% group_by(user) %>% summarise(TrigID = mean(correct)*100)
+
+pretestData <- readRDS("pretest.rds")
+#reduce to 62
+pretestResults62 <- pretestData[pretestData$user %in% combined62,]
+
+sm62 <- pretestResults62 %>%
+  select("user", "MarkXYII", "MarkThetaII", "Right Triangle Trig III", "Right Triangle Trig V")
+sm62$sm <- rowMeans(sm62[,2:5])
+
+postSM62 <- merge(posttestResults62,sm62,by="user")
+
+lmPostSM62 = lm(TrigID ~ sm, data=postSM62)
+
+plot(TrigID ~ sm, data=postSM62,main="SM Score v. Trig ID Posttest")
+abline(lm(TrigID ~ sm, data=postSM62))
+summary(lmPostSM62)
+```
+
+
+# Can SM score predict within-lesson performance?
+
+```{r,message=FALSE,warning=FALSE}
+
+
+lessonData <- readRDS("lesson.rds")
+
+##reduce to 62
+lessonData62 <- lessonData [lessonData$user %in% combined62,]
+
+##only look at first attempt data
+lessonData <- lessonData[lessonData$trialNumber==1,]
+
+chs14 <- c(1:2,5:13,15:22,23:29,30:36)
+ch56 <- c(37:45,47:57)
+
+ch14Data62 <- lessonData62 [ lessonData62$page_id %in% chs14,]
+ch56Data62 <- lessonData62 [ lessonData62$page_id %in% ch56,]
+
+  lessonDataAverageAll62 <- 
+    lessonData62 %>%
+    group_by(user) %>%
+    summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+  
+  lessonDataAverageCh1462 <- 
+    ch14Data62 %>%
+    group_by(user) %>%
+    summarise(PercentCorrect = round(mean(firstCorrect)*100,1))  
+  
+  lessonDataAverageCh5662 <- 
+    ch56Data62 %>%
+    group_by(user) %>%
+    summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+    
+
+
+allData62 <- merge(lessonDataAverageAll62,sm62,by="user")
+ch14DataSum62 <- merge(lessonDataAverageCh1462,sm62, by="user")
+ch56DataSum62 <- merge(lessonDataAverageCh5662,sm62, by="user")
+
+##predict lesson performance with sm score
+
+lm1 = lm(PercentCorrect ~ sm, data=allData62)
+lm2 = lm(PercentCorrect ~ sm, data=ch14DataSum62)
+lm3 = lm(PercentCorrect ~ sm, data=ch56DataSum62)
+
+plot(PercentCorrect ~ sm, data=ch14DataSum62,main="SM Score v. Ch 1-4 Performance")
+abline(lm(PercentCorrect ~ sm, data=ch14DataSum62,main="Ch 1-4"))
+summary(lm2)
+
+plot(PercentCorrect ~ sm, data=ch56DataSum62, main="SM Score v. Ch 5-6 Performance")
+abline(lm(PercentCorrect ~ sm, data=ch56DataSum62, main="Ch 5-6"))
+summary(lm3)
+
+
+```
+
+
+# Can lesson performance predict posttest performance? 
+
+```{r,message=FALSE,warning=FALSE}
+#####predict posttest results from lesson performance
+
+ch14DataSum62 <- merge(lessonDataAverageCh1462,posttestResults62,by="user")
+ch56DataSum62 <- merge(lessonDataAverageCh5662,posttestResults62,by="user")
+allDataSum62 <- merge(lessonDataAverageAll62,posttestResults62,by="user")
+names(ch14DataSum62)[2] <- "PercentCorrectCh14"
+names(ch56DataSum62)[2] <- "PercentCorrectCh56"
+
+lm5 = lm(TrigID ~ PercentCorrectCh14, data=ch14DataSum62)
+plot(TrigID ~ PercentCorrectCh14, data=ch14DataSum62,main="Ch1-4 Lesson Performance v Posttest")
+abline(lm(TrigID ~ PercentCorrectCh14, data=ch14DataSum62))
+summary(lm5)
+
+lm6 = lm(TrigID ~ PercentCorrectCh56, data=ch56DataSum62)
+plot(TrigID ~ PercentCorrectCh56, data=ch56DataSum62,main="Ch5-6 Lesson Performance v Posttest")
+abline(lm(TrigID ~ PercentCorrectCh56, data=ch56DataSum62))
+summary(lm6)
+
+```

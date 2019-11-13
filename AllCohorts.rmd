@@ -1,0 +1,440 @@
+---
+title: "All Cohorts Combined (101 Students)"
+
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_depth: 1
+    toc_float:
+      collapsed: true
+    code_folding: hide
+    
+---
+This group of 101 students is made up 5 cohorts who completed our materials between fall of 2016 and spring of 2018. These cohorts include: 14 community college students from fall 2016, 25 high school students from fall 2016, 19 high school students from summer 2017, 4 high school students from fall 2017, and 39 community college students from fall 2017 - spring 2018. The data from these cohorts can be combined because all 5 cohorts completed the same materials (with the exception of a few minor changes that have been documented in the paper) within similar time frames. All cohorts except the 39 community college students from fall 2017 - spring 2018 completed an immediate intervention study with no comparison group. Combining the data from all cohorts allows us to look at questions that don't depend on the immediate vs. delayed intervention framework with a higher degree of power. 
+
+The code in the following analyses uses the following data frames: pretest.rds, lesson.rds, posttestAll.rds. The raw data can be downloaded from the "Raw Data" tab, and the process used to get the raw data into the pretest.rds, lesson.rds, posttestAll.rds format can be found in the "Data Process" tab. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Which TI problems were most difficult?
+
+We looked at the pattern of performance on each of the 20 types of trigonometric identity problems, broken down into 3 groups - bottom, middle, top - based on performance on TI1.
+```{r,message=FALSE,fig.width=12,fig.height=7,warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(DT)
+library(jsonlite)
+library(tidyr)
+library(reshape2) 
+
+allTrigID <- readRDS("posttestAll.rds")
+
+sin <- function(degree){
+  round(base::sin(degree/180*pi),digits=4)
+}
+
+cos <- function(degree){
+  round(base::cos(degree/180*pi),digits=4)
+}
+
+conjunctionJunction <- function(stim, theta) {
+  evalStim <- eval(parse(text=stim))
+  for(func in c('sin', 'cos')){
+    for( sign in c('', '-')) {
+      testAnswer = eval(parse(text=paste0(sign, func, "(", theta, ")")))
+      if(isTRUE(all.equal(evalStim, testAnswer, tolerance = 0.01))) {
+        return(paste0(sign, func))
+      }
+    }
+  }
+  return("")
+} 
+
+allTrigID$correctAnswer <- mapply(conjunctionJunction, allTrigID$stimulus, allTrigID$theta)
+
+
+allTrigID2 <- separate(allTrigID, response, c("res.sign", "res.func"), sep="(?<=-)", remove = FALSE)
+allTrigID2$res.func <- ifelse(allTrigID2$res.sign=="sin" | allTrigID2$res.sign=="cos",allTrigID2$res.sign,allTrigID2$res.func)
+allTrigID2$res.sign <- ifelse(allTrigID2$res.sign=="sin" | allTrigID2$res.sign=="cos","+",allTrigID2$res.sign)
+
+
+allTrigID2 <- separate(allTrigID2, correctAnswer, c("ans.sign", "ans.func"), sep="(?<=-)", remove = FALSE)
+allTrigID2$ans.func <- ifelse(allTrigID2$ans.sign=="sin" | allTrigID2$ans.sign=="cos",allTrigID2$ans.sign,allTrigID2$ans.func)
+allTrigID2$ans.sign <- ifelse(allTrigID2$ans.sign=="sin" | allTrigID2$ans.sign=="cos","+",allTrigID2$ans.sign)
+
+allTrigID2$error <- ifelse(allTrigID2$res.sign!=allTrigID2$ans.sign & allTrigID2$res.func!=allTrigID2$ans.func, "Both wrong",
+                    ifelse(allTrigID2$res.sign!=allTrigID2$ans.sign, "Wrong sign",
+                    ifelse(allTrigID2$res.func!=allTrigID2$ans.func, "Wrong function",
+                           "Correct")))
+
+d <- allTrigID2 %>%
+  group_by(func,xsign,delta) %>%
+  summarize(acc=mean(correct)) %>%
+  as.data.frame
+
+
+d2 <- subset(allTrigID2, select = c(user, func, xsign, delta, correct, error, rt))
+
+d2a <-
+  d2 %>%
+  group_by(user) %>%
+  summarise(Average = round(mean(correct)*100,1))
+
+d2a$third <- ntile(d2a$Average, 3) 
+
+#create three data frames, one for each third of the data based on performance
+bottom <- d2a[(d2a$third == 1),]
+bottom <- bottom$user
+
+middle <- d2a[(d2a$third == 2),]
+middle <- middle$user
+
+top <- d2a[(d2a$third == 3),]
+top <- top$user
+
+d2bottom <- d2 [d2$user %in% bottom,]
+d2middle <- d2 [d2$user %in% middle,]
+d2top <- d2 [d2$user %in% top,]
+
+allTrigID2$signOrCorrect = (allTrigID2$error == "Correct") | (allTrigID2$error == "Wrong sign")
+allTrigID2$funcOrCorrect = (allTrigID2$error == "Correct") | (allTrigID2$error == "Wrong function")
+
+dbottom2 <- allTrigID2 [allTrigID2$user %in% bottom,]
+dbottom = dbottom2 %>%
+  group_by(func,xsign,delta) %>%
+  summarize(acc=mean(correct)) %>%
+  as.data.frame
+
+dbottomFuncCorrect <- dbottom2 %>%
+  group_by(func,xsign,delta) %>%
+  summarise(acc=mean(signOrCorrect), count=n())
+
+dbottomSignCorrect <- dbottom2 %>%
+  group_by(func,xsign,delta) %>%
+  summarise(acc=mean(funcOrCorrect), count=n())
+
+dmiddle2 <- allTrigID2 [allTrigID2$user %in% middle,]
+dmiddle = dmiddle2 %>%
+  group_by(func,xsign,delta) %>%
+  summarize(acc=mean(correct)) %>%
+  as.data.frame
+
+dmiddleFuncCorrect <- dmiddle2 %>%
+  group_by(func,xsign,delta) %>%
+  summarise(acc=mean(signOrCorrect), count=n())
+
+dmiddleSignCorrect <- dmiddle2 %>%
+  group_by(func,xsign,delta) %>%
+  summarise(acc=mean(funcOrCorrect), count=n())
+
+dtop2 <- allTrigID2 [allTrigID2$user %in% top,]
+dtop = dtop2 %>%
+  group_by(func,xsign,delta) %>%
+  summarize(acc=mean(correct)) %>%
+  as.data.frame
+
+dtopFuncCorrect <- dtop2 %>%
+  group_by(func,xsign,delta) %>%
+  summarise(acc=mean(signOrCorrect), count=n())
+
+dtopSignCorrect <- dtop2 %>%
+  group_by(func,xsign,delta) %>%
+  summarise(acc=mean(funcOrCorrect), count=n())
+
+errorType <- function(i) {
+  
+  if(i=="bottom") {d2 <- d2bottom
+                   d <- dbottom}
+  if(i=="middle") {d2 <- d2middle
+                   d <- dmiddle}
+  if(i=="top") {d2 <- d2top
+                d <- dtop}
+  if(i=="bottomFuncCorrect") {d2 <- d2bottom
+                d <- dbottomFuncCorrect}
+  if(i=="bottomSignCorrect") {d2 <- d2bottom
+                d <- dbottomSignCorrect}
+  if(i=="middleFuncCorrect") {d2 <- d2middle
+                d <- dmiddleFuncCorrect}
+  if(i=="middleSignCorrect") {d2 <- d2middle
+                d <- dmiddleSignCorrect}
+  if(i=="topFuncCorrect") {d2 <- d2top
+                d <- dtopFuncCorrect}
+  if(i=="topSignCorrect") {d2 <- d2top
+                d <- dtopSignCorrect}
+  
+
+d3 <- d2 %>%
+  count(func,xsign,delta,error) %>%
+  spread(error, n, fill = 0)
+
+d4 <- merge(d, d3, by=c("func","xsign","delta"))
+
+
+d4$delta = factor(d4$delta,levels=c(0,90,-90,180,-180))
+d4$xsign = factor(d4$xsign,levels=c("+","-"))
+#d$rule = factor(c(0,0,2,5,0, 4,0,1,0,4, 0,0,3,5,0, 4,0,1,0,4))
+d4$rule = factor(c(0,0,3,0,5, 4,0,1,4,0, 0,0,2,0,5, 4,0,1,4,0))
+d4$rule = factor(d4$rule,levels=c(1:5,0),labels=c('x±0=x','sin(–x)=–sin(x)','cos(–x)=cos(x)','func(x±180)=–func(x)','func(90–x)=opp(x)','Multiple/Other'))
+#d$rule = factor(d$rule,levels=c(1:5,0),labels=c('$x\\pm0=x$','$\\sin(-x)=-\\sin(x)$','$\\cos(-x)=\\cos(x)$','$\\textrm{func}(x\\pm180)=-\\textrm{func}(x)$','$\\textrm{func}(90-x)=\\textrm{opp}(x)$','Multiple/Other'))
+
+
+d4$signfunc = factor(interaction(d4$xsign,d4$func),levels=c('+.sin','+.cos','-.sin','-.cos'),labels=c('sin(+θ +/- Δ)','cos(+θ +/- Δ)','sin(-θ +/- Δ)','cos(-θ +/- Δ)'))
+
+#d$signfunc = factor(interaction(d$xsign,d$func),levels=c('+.sin','+.cos','-.sin','-.cos'),labels=c('$\\sin(+\\theta \\pm \\Delta)$','$\\cos(+\\theta \\pm \\Delta)$','$\\sin(-\\theta \\pm \\Delta)$','$\\cos(-\\theta \\pm \\Delta)$'))
+
+d4$delta = factor(d4$delta,levels=c(-180,-90,0,90,180))
+
+d4 <- gather(d4, ErrorType, ErrorCount, -func, -xsign, -delta, -acc, -rule, -signfunc)
+
+d4$ErrorType <- factor(d4$ErrorType, levels=c("Both wrong","Wrong function","Wrong sign","Correct"))
+
+return(d4)
+
+}
+
+
+d4bottom <- errorType("bottom")
+d4bottom$third <- "bottom"
+d4middle <- errorType("middle")
+d4middle$third <- "middle"
+d4top <- errorType("top")
+d4top$third <- "top"
+
+##########################################
+d4bottomFuncCorrect <- errorType("bottomFuncCorrect")
+d4bottomFuncCorrect$third <- "bottom"
+d4middleFuncCorrect <- errorType("middleFuncCorrect")
+d4middleFuncCorrect$third <- "middle"
+d4topFuncCorrect <- errorType("topFuncCorrect")
+d4topFuncCorrect$third <- "top"
+
+
+d4bottomSignCorrect <- errorType("bottomSignCorrect")
+d4bottomSignCorrect$third <- "bottom"
+d4middleSignCorrect <- errorType("middleSignCorrect")
+d4middleSignCorrect$third <- "middle"
+d4topSignCorrect <- errorType("topSignCorrect")
+d4topSignCorrect$third <- "top"
+##########################################
+
+all <- rbind(d4bottom,d4middle,d4top)
+
+ggplot(all,aes(delta,acc,fill=rule))+
+  stat_summary(fun.y=mean,geom='bar') +
+  facet_grid(third~signfunc)+theme_bw(20)+
+  labs(x='Shift Δ',y='Accuracy',fill='Rule')+
+  scale_fill_manual(values = c("#fb9a99","#a6cee3","#1f78b4", "#b2df8a","#F2ED2B","#999999")) + 
+  theme(panel.grid.minor=element_blank(), panel.grid.major=element_blank(), strip.background=element_blank())+scale_y_continuous(limits=c(0,1),labels = c(0,25,50,75,100))
+
+
+ggplot(all,aes(delta,ErrorCount,fill=ErrorType))+
+  geom_bar(stat="identity")+
+  facet_grid(third~signfunc)+theme_bw(20)+
+  labs(x='Shift Δ',y='Count',fill='Error Type') 
+
+```
+
+
+# How does TI performance relate to SM score? 
+```{r,message=FALSE,warning=FALSE}
+
+library(lme4)
+library(dplyr)
+
+##39 analysis
+posttestResults <- readRDS("posttestAll.rds")
+#posttestResults <- readRDS("posttest39.rds")
+#posttestResults1 <- posttestResults[posttestResults$group=="LE" & posttestResults$test=="TI1", ]
+#posttestResults2 <- posttestResults[posttestResults$group=="LL" & posttestResults$test=="TI2", ]
+#posttestResults3 <- rbind(posttestResults1,posttestResults2)
+posttestResults<- posttestResults %>% group_by(user) %>% summarise(TrigID = mean(correct)*100)
+
+pretestData <- readRDS("pretest.rds")
+
+sm <- pretestData %>%
+  select("user", "MarkXYII", "MarkThetaII", "Right Triangle Trig III", "Right Triangle Trig V")
+sm$sm <- rowMeans(sm[,2:5])
+
+postSM <- merge(posttestResults,sm,by="user")
+
+lmPostSM = lm(TrigID ~ sm, data=postSM)
+
+plot(TrigID ~ sm, data=postSM,main="SM Score v. Trig ID Posttest")
+abline(lm(TrigID ~ sm, data=postSM))
+summary(lmPostSM)
+```
+
+
+# Can SM score predict within-lesson performance?
+
+```{r,message=FALSE,warning=FALSE}
+
+
+lessonData <- readRDS("lesson.rds")
+userIDs <- read.csv("combinedUserIDs.csv")
+#exclude those who didn't meet threshold
+noThreshold <- c(1719,1653,1735,1998,2038)
+userIDs <- userIDs [! userIDs$TrigID %in% noThreshold,]
+userIDs <- userIDs$TrigID
+
+##only look at first attempt data
+lessonData <- lessonData[lessonData$trialNumber==1,]
+
+chs14 <- c(1:2,5:13,15:22,23:29,30:36)
+ch56 <- c(37:45,47:57)
+
+ch14Data <- lessonData [ lessonData$page_id %in% chs14,]
+ch56Data <- lessonData [ lessonData$page_id %in% ch56,]
+
+
+
+  lessonDataAverageAll <- 
+    lessonData %>%
+    group_by(user) %>%
+    summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+  
+  lessonDataAverageCh14 <- 
+    ch14Data %>%
+    group_by(user) %>%
+    summarise(PercentCorrect = round(mean(firstCorrect)*100,1))  
+  
+  lessonDataAverageCh56 <- 
+    ch56Data %>%
+    group_by(user) %>%
+    summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+    
+posttestData <- readRDS("posttestAll.rds")
+pretestData <- readRDS("pretest.rds")
+
+sm <- pretestData %>%
+  select("user", "MarkXYII", "MarkThetaII", "Right Triangle Trig III", "Right Triangle Trig V")
+sm$sm <- rowMeans(sm[,2:5])
+
+
+allData <- merge(lessonDataAverageAll,sm,by="user")
+ch14DataSum <- merge(lessonDataAverageCh14,sm, by="user")
+ch56DataSum <- merge(lessonDataAverageCh56,sm, by="user")
+
+##predict lesson performance with sm score
+
+lm1 = lm(PercentCorrect ~ sm, data=allData)
+lm2 = lm(PercentCorrect ~ sm, data=ch14DataSum)
+lm3 = lm(PercentCorrect ~ sm, data=ch56DataSum)
+
+plot(PercentCorrect ~ sm, data=ch14DataSum,main="SM Score v. Ch 1-4 Performance")
+abline(lm(PercentCorrect ~ sm, data=ch14DataSum,main="Ch 1-4"))
+summary(lm2)
+
+plot(PercentCorrect ~ sm, data=ch56DataSum, main="SM Score v. Ch 5-6 Performance")
+abline(lm(PercentCorrect ~ sm, data=ch56DataSum, main="Ch 5-6"))
+summary(lm3)
+
+
+```
+
+# Can lesson performance predict posttest performance? 
+
+```{r,message=FALSE,warning=FALSE}
+#####predict posttest results from lesson performance
+# posttest <- readRDS("posttest39.rds")
+# 
+# posttestGroupA <- posttest[posttest$group=="LE" & posttest$test=="TI1",]
+# posttestGroupA <- posttestGroupA %>% group_by(user) %>% summarise(TrigID = mean(correct)*100)
+# 
+# posttestGroupB <- posttest[posttest$group=="LL" & posttest$test=="TI2",]
+# posttestGroupB <- posttestGroupB %>% group_by(user) %>% summarise(TrigID = mean(correct)*100)
+# 
+# posttestResults <- rbind(posttestGroupA,posttestGroupB)
+
+posttestResults <- readRDS("posttestAll.rds")
+posttestResults<- posttestResults %>% group_by(user) %>% summarise(TrigID = mean(correct)*100)
+
+ch14DataSum <- merge(lessonDataAverageCh14,posttestResults,by="user")
+ch56DataSum <- merge(lessonDataAverageCh56,posttestResults,by="user")
+allDataSum <- merge(lessonDataAverageAll,posttestResults,by="user")
+names(ch14DataSum)[2] <- "PercentCorrectCh14"
+names(ch56DataSum)[2] <- "PercentCorrectCh56"
+
+lm5 = lm(TrigID ~ PercentCorrectCh14, data=ch14DataSum)
+plot(TrigID ~ PercentCorrectCh14, data=ch14DataSum,main="Ch1-4 Lesson Performance v Posttest")
+abline(lm(TrigID ~ PercentCorrectCh14, data=ch14DataSum))
+summary(lm5)
+
+lm6 = lm(TrigID ~ PercentCorrectCh56, data=ch56DataSum)
+plot(TrigID ~ PercentCorrectCh56, data=ch56DataSum,main="Ch5-6 Lesson Performance v Posttest")
+abline(lm(TrigID ~ PercentCorrectCh56, data=ch56DataSum))
+summary(lm6)
+
+```
+
+# Which lesson problems are most difficult?
+
+```{r,message=FALSE,warning=FALSE}
+###find most frequently missed problems
+LessonDataByProblem <-
+  lessonData %>%
+  group_by(order) %>%
+  summarise(PercentCorrect = round(mean(firstCorrect)*100,1),
+            MedianRT = round(median(rt)/1000,1))
+
+
+##reduce dataset to problems less than 60% of students got correct
+LessonDataLess60 <- LessonDataByProblem[LessonDataByProblem$PercentCorrect<60.1,]
+lessthan60 <- LessonDataLess60$order
+
+library(kableExtra)
+mostMissedProblems <- read.csv("lessthan60.csv")
+kable(mostMissedProblems) %>%
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+
+
+# What are the patterns of performance for the most frequently missed problems?
+
+```{r,message=FALSE,warning=FALSE,fig.width=12,fig.height=8}
+
+lessthan60Data <- lessonData [ lessonData$order %in% lessthan60,]
+
+lessonBottom <- lessthan60Data [lessthan60Data$user %in% bottom,]
+lessonMiddle <- lessthan60Data [lessthan60Data$user %in% middle,]
+lessonTop <- lessthan60Data [lessthan60Data$user %in% top,]
+
+lessthan60Bottom <-
+  lessonBottom%>%
+  group_by(order) %>%
+  summarise(Bottom = round(mean(firstCorrect)*100,1))
+
+lessthan60Middle <-
+  lessonMiddle%>%
+  group_by(order) %>%
+  summarise(Middle = round(mean(firstCorrect)*100,1))
+
+lessthan60Top <-
+  lessonTop%>%
+  group_by(order) %>%
+  summarise(Top = round(mean(firstCorrect)*100,1))
+
+lessonMerged <- merge(lessthan60Bottom,lessthan60Middle,by="order")
+lessonMerged <- merge(lessonMerged,lessthan60Top,by="order")
+
+lessonMergedLong <- gather(lessonMerged, third, percentCorrect, Bottom:Top, factor_key=TRUE)
+lessonMergedLong$third <- factor(lessonMergedLong$third, levels=c("Bottom","Middle","Top"))
+
+# ggplot(lessonMergedLong,aes(as.factor(problem),percentCorrect,fill=third))+
+#   geom_bar(stat="identity",position="dodge") +
+#   labs(x='Problem #',y='Percent Correct',fill='Third') 
+
+ggplot(lessonMergedLong,aes(x=third,y=percentCorrect,fill=third))+
+  geom_bar(stat="identity") +
+  facet_wrap(~as.factor(order),ncol=6) +
+  labs(x='Third',y='Percent Correct',fill='Third') +
+  theme(strip.text.x = element_text(size = 14),axis.text.x = element_text(size = 10),legend.text=element_text(size=12))
+
+```
+
+

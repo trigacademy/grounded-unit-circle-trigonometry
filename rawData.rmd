@@ -1,0 +1,41 @@
+---
+title: "Raw Data"
+
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_depth: 1
+    toc_float:
+      collapsed: true
+    code_folding: hide
+    
+
+---
+
+```{r}
+library(magrittr)
+readLines("LateHS.csv") %>% 
+  paste0(collapse="\n") %>% 
+  openssl::base64_encode() -> encoded
+```
+
+<a download="LateHS.csv" href="`r sprintf('data:text/csv;base64,%s', encoded)`">Download Post Jan 2017 High School Raw Data</a>
+
+<!-- # ```{r} -->
+<!-- # library(magrittr) -->
+<!-- # readLines("REPandEarlyHS.csv") %>%  -->
+<!-- #   paste0(collapse="\n") %>%  -->
+<!-- #   openssl::base64_encode() -> encoded -->
+<!-- # ``` -->
+<!-- #  -->
+<!-- # <a download="REPandEarlyHS.csv" href="`r sprintf('data:text/csv;base64,%s', encoded)`">Download All Community College and Pre Jan 2017 HS Raw Data</a> -->
+
+```{r}
+library(magrittr)
+readLines("combinedUserIDs.csv") %>% 
+  paste0(collapse="\n") %>% 
+  openssl::base64_encode() -> encoded
+```
+
+<a download="combinedUserIDs.csv" href="`r sprintf('data:text/csv;base64,%s', encoded)`">Download User ID Data</a>

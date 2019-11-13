@@ -1,0 +1,1632 @@
+---
+title: "Data Process"
+
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_depth: 1
+    toc_float:
+      collapsed: true
+    code_folding: hide
+    
+---
+
+<br>
+<br>
+
+Click on the "code" button beside each hashtag to see the code used to transform the raw data into the data objects that are used in the analyses on the "Comparison Study Cohort", "Early Cohorts", and "All Cohorts" pages of this website. The raw data can be downloaded from the "Raw Data" tab. 
+
+# #pretest.rds
+
+This code provides the process used to obtain the "pretest.rds" file. To execute this code, download the "REPandEarlyHS.csv", "LateHS.csv", and "combinedUserIDs" files, then run the code on your computer. 
+
+```{r,eval=F,echo=T}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(jsonlite)
+library(magrittr)
+library(rvest)
+library(tidyr)
+
+
+userIDs <- read.csv("combinedUserIDs.csv")
+#exclude those who didn't meet threshold
+noThreshold <- c(1719,1653,1735,1998,2038)
+userIDs <- userIDs [! userIDs$TrigID %in% noThreshold,]
+
+repResults <- read.csv("REPandEarlyHS.csv")
+tahomaResults <- read.csv("LateHS.csv")
+#relabel tahoma pretest IDs so they align with REP pretest IDs (were 1-2 off because of prescreen and radian pages)
+tahomaResults$unit <- ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==2, 1, ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==3, 2,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==4, 3,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==5, 4,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==6, 5,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==7, 6,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==8, 7,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==9, 8,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==10, 9,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==12, 10,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==13, 11,ifelse(tahomaResults$phase == "pre" & tahomaResults$unit==1, "survey",tahomaResults$unit))))))))))))
+
+tahomaIDs <- userIDs[(userIDs$Group == "TaFall16") | (userIDs$Group == "TaSum17") | (userIDs$Group == "TaFall17"),]
+tahomaIDs <- tahomaIDs$TrigID
+repIDs <- userIDs[(userIDs$Group == "REP17-18") | (userIDs$Group == "REP16"),]
+repIDs <- repIDs$TrigID
+
+###separate out tahoma fall 16 data from rep database since page numbers are off
+tahomaIDsFall16 <- userIDs[(userIDs$Group == "TaFall16"),]
+tahomaIDsFall16 <- tahomaIDsFall16$TrigID
+tahomaFall16Results <- repResults[repResults$user_id %in% tahomaIDsFall16, ]
+
+#relabel tahoma pretest IDs so they align with REP pretest IDs (were 1 off because of prescreen)
+tahomaFall16Results$unit <- ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==2, 1, ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==3, 2,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==4, 3,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==5, 4,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==6, 5,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==7, 6,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==8, 7,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==9, 8,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==10, 9,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==11, 10,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==12, 11,ifelse(tahomaFall16Results$phase == "pre" & tahomaFall16Results$unit==1, "survey",tahomaFall16Results$unit))))))))))))
+
+#remove tahoma fall 16 data from rep results
+repResults <- repResults[!repResults$user_id %in% tahomaIDsFall16, ]
+
+repResults$X <- NULL
+tahomaFall16Results$X <- NULL
+
+tahomaResults$id <- as.integer(tahomaResults$id)
+tahomaResults$user_id <- as.integer(tahomaResults$user_id)
+
+#combine results
+allData<- rbind(tahomaResults,repResults,tahomaFall16Results)
+
+#combine IDs
+allStudents <- c(repIDs,tahomaIDs)
+
+#divide IDs by before sum 2017 and after sum 2017 for vocab, letter sets, and RTT qs
+preSum2017 <- userIDs[(userIDs$Group == "TaFall16") | (userIDs$Group == "REP16"),]
+preSum2017 <- preSum2017$TrigID
+postSum2017 <- userIDs[(userIDs$Group == "REP17-18") | (userIDs$Group == "TaSum17") | (userIDs$Group == "TaFall17"),]
+postSum2017 <- postSum2017$TrigID
+
+################################################figure rotation
+
+figureRotation <- function(i) {
+  
+  if (i=="Rotate") {
+    apiRotateTA <- allData[(allData$unit=="1") & (allData$phase=="pre"),]}
+  
+  data <- data.frame()
+  
+  for(j in allStudents){
+    
+    pageData <- apiRotateTA[apiRotateTA$user_id==j, ]
+    
+    if(nrow(pageData)==0) next
+    pageData <- fromJSON(as.character(pageData$data[1]))
+    pageData <- pageData[pageData$trial_type == "single-stim", ]
+    if("rt" %in% names(pageData) && "answer" %in% names(pageData) && "response" %in% names(pageData) && "correct" %in% names(pageData)){
+      pageData$trial = pageData$trial_index+1
+      pageData <- pageData[,c('trial',"rt", "answer", "response", "correct", "stimulus")]
+      
+      for (i in 1:2) {
+        pageData[paste0('stim',i)] = sapply(pageData$stimulus,function(x){substr(html_attrs(html_nodes(read_html(x),'img'))[[i]]['src'],nchar('/static/img/z/')+1,nchar(x)-nchar('.jpg'))})
+        pageData[paste0('shape',i)] = sapply(sapply(pageData[paste0('stim',i)],function(x){strsplit(x,'_')}),function(x){x[1]})
+        pageData[paste0('axis',i)] = sapply(sapply(pageData[paste0('stim',i)],function(x){strsplit(x,'_')}),function(x){x[2]})
+        pageData[paste0('rotate',i)] = sapply(sapply(pageData[paste0('stim',i)],function(x){strsplit(x,'_')}),function(x){x[3]})
+        pageData[paste0('mirror',i)] = sapply(sapply(pageData[paste0('stim',i)],function(x){strsplit(x,'_')}),function(x){x[4]})
+      }
+      
+      pageData <- cbind(pageData, data.frame(user=rep(j,nrow(pageData))))
+      data <- rbind(data,pageData)
+    }
+  }
+  data <- data[,c(1:5,17)]
+  return(data)
+}
+
+###embedded figure#######################################################################
+
+embeddedFigure <- function(i) {
+  
+
+  if (i=="Figure") {
+    apiPrePage2 <- allData[(allData$unit=="2") & (allData$phase=="pre"),]}
+
+  data <- data.frame()
+  
+  for(j in allStudents){
+    
+    answers = data.frame('set'=rep(1:2,each=10),'complex'=rep(1:10,2),'simple'=c(c('a','b','a','b','b','a','a','a','b','b'),c('a','a','b','b','b','b','a','a','b','a')),stringsAsFactors=F)
+    pageData <- apiPrePage2[apiPrePage2$user_id==j, ]
+    if(nrow(pageData)==0) next
+    pageData <- fromJSON(as.character(pageData$data[1]))
+    pageData <- pageData[pageData$trial_type == "single-stim", ]
+    # ASCII key codes 89=Y, 78=N
+    pageData$trial = pageData$trial_index+1
+    pageData$response = ifelse(pageData$key_press==89,'y','n')
+    pageData$set = sapply(pageData$stimulus,function(r){substr(r,27,27)})
+    pageData$simple = sapply(pageData$stimulus,function(r){substr(r,29,29)})
+    pageData$complex = sapply(pageData$stimulus,function(r){gsub('\\.','',substr(r,78,79))})
+    pageData$match = apply(pageData,1,function(r){ifelse(answers[answers$set==r['set'] & answers$complex==r['complex'],'simple']==r['simple'],'y','n')})
+    pageData$correct = pageData$match==pageData$response
+    pageData <- pageData[,c('trial',"rt", "response", 'set','simple','complex','match','correct')]
+    pageData <- cbind(pageData, data.frame(user=rep(j,nrow(pageData))))
+    data <- rbind(data,pageData)
+  }
+  data <- data[,c(1:3,7:9)]
+  return(data)
+}
+
+###letter sets#######################################################################
+
+letterSets <- function(i) {
+  
+
+  apiPrePage3 <- allData[(allData$unit=="3") & (allData$phase=="pre"),]
+  
+  if (i=="Letter1") {
+    
+    data <- data.frame()
+    
+  
+  for(j in preSum2017){
+    
+    pageData <- apiPrePage3[apiPrePage3$user_id==j, ]
+    if(nrow(pageData)==0) next
+    pageData <- fromJSON(as.character(pageData$data[1]))
+    pageData <- pageData[pageData$trial_type == "multi-choice" & pageData$internal_chunk_id == "0-0" & pageData$trial_index_globa > 2, ]
+    pageData$correctanswer <- c(1, 4, 4, 3, 2, 3, 2, 4, 5, 2, 4, 3, 4, 2, 2, 5)
+    pageData$studentcorrect <- ifelse(pageData$response == pageData$correctanswer, TRUE, FALSE)
+    pageData$user <- j
+    data <- rbind(data, pageData)
+  }
+    data <- data[,c(8,10:12)]
+    
+  
+  }
+  
+
+  if (i=="Letter2"){
+    
+  data <- data.frame()
+  
+  for(j in postSum2017){
+    
+    pageData <- apiPrePage3[apiPrePage3$user_id==j, ]
+    
+    if(nrow(pageData)==0) next
+    pageData <- fromJSON(as.character(pageData$data[1]))
+    pageData <- pageData[pageData$trial_type == "multi-choice" & pageData$internal_chunk_id == "0-0" & pageData$trial_index_globa > 2, ]
+    pageData$correctanswer <- c(1,4,2,2,5,1,1,3,2,3,2,5,5,1,2)
+    pageData$correct <- ifelse(pageData$response == pageData$correctanswer, TRUE, FALSE)
+    pageData$user <- j
+    data <- rbind(data, pageData)
+  }
+  data <- data[,c(2,8,10:12)]
+  }
+  return(data)
+}
+
+###vocab#######################################################################
+vocab <- function(i) {
+  
+
+  apiPrePage4 <- allData[(allData$unit=="4") & (allData$phase=="pre"),]
+  
+    
+  if (i=="Vocab1"){
+    
+    data <- data.frame()
+    
+    for(j in preSum2017){
+      
+      pageData <- apiPrePage4[apiPrePage4$user_id==j, ]
+      if(nrow(pageData)==0) next
+      pageData <- fromJSON(as.character(pageData$data[1]))
+      pageData <- pageData[pageData$trial_type == "multi-choice" & pageData$internal_chunk_id == "0-0" & pageData$trial_index_globa > 1, ]
+      pageData$word <- c("airtight",  "peddle", "raider", "energetically", "implicate",  "legibleness", "laceration", "jollification", "willowy", "feline", "dispiritedly", "intricacy", "excerpt", "arrogance",  "exorbitance", "chef", "milestone", "chowder", "emancipator", "consultative", "emergence", "ignoramous", "calamitous", "incubate", "incessantness", "devitalize", "exonerate", "decadence", "ungainly", "pestilential")
+      pageData$correctanswer <- c(3, 4, 2, 4, 1, 3, 1, 2, 1, 4, 4, 2, 2, 3, 1, 3, 1, 4, 2, 3, 4, 4, 3, 4, 2, 2, 4, 1, 3, 1) 
+      pageData$studentcorrect <- ifelse(pageData$response == pageData$correctanswer, TRUE, FALSE)
+      pageData$user <- j
+      data <- rbind(data, pageData)
+    }
+    data <- data[,c(8,10:13)]
+  }
+    
+  if (i=="Vocab2") {
+    
+  data <- data.frame()
+  
+  for(j in postSum2017){
+    
+    pageData <- apiPrePage4[apiPrePage4$user_id==j, ]
+    
+    if(nrow(pageData)==0) next
+    pageData <- fromJSON(as.character(pageData$data[1]))
+    pageData <- pageData[pageData$trial_type == "multi-choice" & pageData$internal_chunk_id == "0-0" & pageData$trial_index_globa > 1, ]
+    pageData$word <- c("mumble", "perspire", "gush", "massive", "feign",  "unwary", "veer", "orthodox", "stripling", "salubrious", "limpid", "procreate", "replete", "frieze",  "treacle", "ignominous", "abjure", "duress", "bayonet", "astound", "contamination", "amplify", "mural (pertaining to)", "hale", "meander", "burnish", "duplicity", "mundane", "deleterious", "nascent", "prolific",  "paroxysm", "antipodal", "acrimony", "lissome", "succinct")
+    pageData$correctanswer <- c(1,2,2,4,1,3,1,1,4,5,3,4,1,3,5,4,3,5,4,3,4,2,5,4,5,1,2,1,1,5,1,4,4,5,4,2) 
+    pageData$correct <- ifelse(pageData$response == pageData$correctanswer, TRUE, FALSE)
+    pageData$user <- j
+    data <- rbind(data, pageData)
+  }
+  data <- data[,c(2,8,10:13)]
+  }
+  return(data)
+}
+
+###add/subtract#######################################################################
+addSubtract <- function(i) {
+  
+  
+  if (i=="AddSub") {
+    apiPrePage5 <- allData[(allData$unit=="5") & (allData$phase=="pre"),]}
+  
+  data <- data.frame()
+  
+  for(j in allStudents){
+    
+    pageData <- apiPrePage5[apiPrePage5$user_id==j, ]
+    
+    if(nrow(pageData)==0) next
+    pageData <- fromJSON(as.character(pageData$data[1]))
+    pageData <- pageData[pageData$trial_type == "survey-textline", ]
+    
+    pageData$response <- as.numeric(gsub("([-])|[[:punct:]]|Q0", "\\1", pageData$responses))
+    
+    names = names(pageData)
+    index <- which(names == "0")
+    names(pageData)[index] <-paste("stimulus")
+    
+    pageData$correctanswer <- sapply(pageData$stimulus,function(t){return(eval(parse(text=t)))})
+    pageData$stimclean <- gsub("[[:punct:]]", "", pageData$stimulus)
+    pageData$add1 <- substr(pageData$stimclean,1,2)
+    pageData$add2 <- substr(pageData$stimclean,3,4)
+    pageData$add1 = as.numeric(pageData$add1)
+    pageData$add2 = as.numeric(pageData$add2)
+    
+    pageData$correct <- ifelse(is.na(pageData$response), FALSE,
+                               ifelse(pageData$response == pageData$correctanswer, TRUE, FALSE))
+    pageData$user <- j
+    data <- rbind(data, pageData)
+  }
+  data <- data[,c(2,8,10:11,15:16)]
+  return(data)
+}
+
+
+markXY <- function(i) {
+  
+  
+  if (i=="MarkXYI") {
+    apiMarkXY <- allData[(allData$unit=="6") & (allData$phase=="pre"),]}
+
+  if (i=="MarkXYII") {
+    apiMarkXY <- allData[(allData$unit=="7") & (allData$phase=="pre"),]}
+  # 
+  # if (i=="MarkXYPostI"| i=="MarkXYPostIIA" | i=="MarkXYPostIIB") {
+  #   apiMarkXY <- allData[(allData$unit=="1") & (allData$phase=="post"),]}
+  # 
+  # if (i=="MarkXYPostSurvey") {
+  #   apiMarkXY <- allData[(allData$unit=="1") & (allData$phase=="survey"),]}
+  
+  
+  data <- data.frame()
+  
+  if (i=="MarkXYI" | i=="MarkXYII") {
+    filteredApiMarkXY <- data.table(apiMarkXY[apiMarkXY$user_id %in% allStudents, ])
+    filteredApiMarkXY = filteredApiMarkXY %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(1L)
+  }
+  
+  if (i=="MarkXYPostI") {
+    filteredApiMarkXY = data.table(apiMarkXY[apiMarkXY$user_id %in% groupA, ])
+    filteredApiMarkXY = filteredApiMarkXY %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(1L)
+  }
+  
+  if (i=="MarkXYPostSurvey" | i=="MarkXYPostIIB") {
+    filteredApiMarkXY = data.table(apiMarkXY[apiMarkXY$user_id %in% groupB, ])
+    filteredApiMarkXY = filteredApiMarkXY %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(1L)
+  }
+  
+  if (i=="MarkXYPostIIA") {
+    filteredApiMarkXY = data.table(apiMarkXY[apiMarkXY$user_id %in% groupA, ])
+    filteredApiMarkXY = filteredApiMarkXY %>% 
+      group_by(user_id) %>%
+      arrange(id) %>% 
+      slice(1L)
+  }
+  
+  
+  for (row in 1:nrow(filteredApiMarkXY)) {
+    
+    userData <- filteredApiMarkXY[row, ]
+    j = userData$user_id
+    
+    if(nrow(userData)==0) next
+    pageData <- fromJSON(as.character(userData$data[1]))
+    pageData <- pageData[pageData$trial_type == "html", ]
+    newData <- data.frame(pageData$trials)
+    correct <- c()
+    response.x <- c()
+    response.y <- c()
+    rt <- c()
+    for(k in 1:nrow(newData)) {
+      attemptsData <- unlist(newData$attempts[k])
+      correct <- c(correct, attemptsData["correct"])
+      response.x <- c(response.x, attemptsData["response.x"])
+      response.y <- c(response.y, attemptsData["response.y"])
+      rt <- c(rt, attemptsData["rt"])
+    }
+    newData$correct <- as.logical(correct)
+    newData$response.x <- as.numeric(response.x)
+    newData$response.y <- as.numeric(response.y)
+    newData$rt <- as.numeric(rt)
+    newData$user <- rep(j,nrow(pageData))
+    newData <- newData[, c("stimulus","correct","response.x","response.y","rt", "user")]
+    data <- bind_rows(data, newData)
+    
+  }
+  
+  data$correct <- as.logical(data$correct)
+  data$rt <- as.numeric(data$rt)
+  data$user <- as.character(data$user)
+  ##convert em-dash to -
+  data$stimulus <- iconv(data$stimulus, "", "ASCII", "byte")
+  data$stimulus <- gsub("<e2><80><93>", "-", data$stimulus)
+  ##increase "correct" threshold
+  data$goal.x <- as.numeric(gsub(".*\\(|\\,.*", "", data$stimulus))
+  data$goal.y <- as.numeric(gsub(".*\\,|\\).*", "", data$stimulus))
+  data$correct <- ifelse((abs(data$goal.x-as.numeric(data$response.x)) < 0.041) & (abs(data$goal.y-as.numeric(data$response.y)) < 0.041), TRUE, FALSE)
+  data <- data[,c(1:6)]
+  
+  return(data)
+}
+
+markTheta <- function(i) {
+  
+
+  if (i=="MarkThetaI") {
+    apiMarkTheta <- allData[(allData$unit=="8") & (allData$phase=="pre"),]}
+
+  if (i=="MarkThetaII") {
+    apiMarkTheta <- allData[(allData$unit=="9") & (allData$phase=="pre"),]}
+  # 
+  # if (i=="MarkThetaPostI" | i=="MarkThetaPostIIA" | i=="MarkThetaPostIIB") {
+  #   apiMarkTheta <- allData[(allData$unit=="2") & (allData$phase=="post"),]}
+  # 
+  # if (i=="MarkThetaPostSurvey") {
+  #   apiMarkTheta <- allData[(allData$unit=="2") & (allData$phase=="survey"),]}
+  # 
+  
+  data <- data.frame()
+  
+  
+  if (i=="MarkThetaI" | i=="MarkThetaII") {
+    filteredApiMarkTheta = data.table(apiMarkTheta[apiMarkTheta$user_id %in% allStudents, ])
+    filteredApiMarkTheta = filteredApiMarkTheta %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(1L)
+  }
+  
+  if (i=="MarkThetaPostI") {
+    filteredApiMarkTheta = data.table(apiMarkTheta[apiMarkTheta$user_id %in% groupA, ])
+    filteredApiMarkTheta = filteredApiMarkTheta %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(1L)
+  }
+  
+  if (i=="MarkThetaPostSurvey" | i=="MarkThetaPostIIB") {
+    filteredApiMarkTheta = data.table(apiMarkTheta[apiMarkTheta$user_id %in% groupB, ])
+    filteredApiMarkTheta = filteredApiMarkTheta %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(1L)
+  }
+  
+  if (i=="MarkThetaPostIIA") {
+    filteredApiMarkTheta = data.table(apiMarkTheta[apiMarkTheta$user_id %in% groupA, ])
+    filteredApiMarkTheta = filteredApiMarkTheta %>% 
+      group_by(user_id) %>%
+      arrange(id) %>% 
+      slice(1L)
+  }
+  
+  for(row in 1:nrow(filteredApiMarkTheta)){
+    
+    pageData <- filteredApiMarkTheta[row, ]
+    j = pageData$user_id
+    
+    if(nrow(pageData)==0) next
+    pageData <- fromJSON(as.character(pageData$data[1]))
+    pageData <- pageData[pageData$trial_type == "html", ]
+    pageData <- as.data.frame(pageData$trials)
+    
+    correct <- c()
+    response.theta <- c()
+    rt <- c()
+    for(k in 1:nrow(pageData)) {
+      attemptsData <- unlist(pageData$attempts[k])
+      correct <- c(correct, attemptsData["correct"])
+      response.theta <- c(response.theta, attemptsData["response.theta"])
+      rt <- c(rt, attemptsData["rt"])
+    }
+    pageData$correct <- correct
+    pageData$response.theta <- as.numeric(response.theta)
+    pageData$rt <- as.numeric(rt)
+    pageData$user <- rep(j,nrow(pageData))
+    pageData <- pageData[, c("stimulus","correct","response.theta", "rt", "user")]
+    data <- rbind(data,pageData)
+    
+  }
+  
+  data$user <- as.character(data$user)
+  
+  return(data)
+}
+
+trigConcepts <- function(i) {
+  
+  if (i=="RTT") {
+    apiPrePage10 <- allData[(allData$unit=="10") & (allData$phase=="pre"),]}
+  
+  data <- data.frame()
+  
+  for(j in allStudents){
+    pageData <- apiPrePage10[apiPrePage10$user_id==j, ]
+    
+    if(nrow(pageData)==0) next
+    pageData <- fromJSON(as.character(pageData$data[1]))
+    pageData <- pageData[pageData$trial_type == "survey-textline" & pageData$trial_index_global < 12, ]
+    chunk1 <- unlist(fromJSON(pageData$responses[1]))
+    chunk2 <- unlist(fromJSON(pageData$responses[2]))
+    chunk3 <- unlist(fromJSON(pageData$responses[3]))
+    chunk4 <- unlist(fromJSON(pageData$responses[4]))
+    chunk5 <- unlist(fromJSON(pageData$responses[5]))
+    chunk6 <- unlist(fromJSON(pageData$responses[6]))
+    chunk7 <- unlist(fromJSON(pageData$responses[7]))
+    chunk8 <- unlist(fromJSON(pageData$responses[8]))
+    chunk9 <- unlist(fromJSON(pageData$responses[9]))
+    chunk10 <- unlist(fromJSON(pageData$responses[10]))
+    chunk11 <- unlist(fromJSON(pageData$responses[11]))
+    questionlabel <- c("Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10", "Q11", "Q12", "Q13","Q14","Q15","Q16","Q17","Q18","Q19", "Q20", "Q21", "Q22","Q23","Q24","Q25","Q26","Q27","Q28", "Q29", "Q30")
+    answers <- c("4/5", "3/5", "4/3", "3/5", "8", "6", "10", "6", "8/10", "6/10", "8/6","6/10","1/2","sqrt(3)/2","-sqrt(3)/2","1/2","-sqrt(3)/2","-1/2","30","1/2","sqrt(3)/2","1/2","sqrt(3)/2","-sqrt(3)/2","1/2","-sqrt(3)/2","-1/2","30","1/2","sqrt(3)/2")
+    answers2 <- c(.8,.6,1.333,.6,8,6,10,6,.8,.6,1.333,.6,0.5,0.87,-.87,0.5,-.87,-0.5,30,0.5,0.87,0.5,0.87,-.87,0.5,-.87,-0.5,30,0.5,0.87)
+    answers3 <- c("4/5", "3/5","4/3","3/5", "8", "6","10","6", "4/5","3/5","4/3","3/5", "0.5/1","0.87/1","-0.87/1","0.5/1","-0.87/1","-0.5/1","30 degrees","0.5/1","0.87/1","0.5/1","0.87/1","-0.87/1","0.5/1","-0.87/1","-0.5/1","30 degrees","0.5/1","0.87/1")
+    response <- c(gsub(" ", "", chunk1[1]), chunk1[2], chunk1[3], chunk1[4], chunk2[1], chunk2[2], chunk2[3], chunk2[4], chunk3[1], chunk3[2], chunk3[3], chunk3[4], chunk4[1], chunk4[2], chunk5[1], chunk5[2], chunk6[1], chunk6[2], chunk7[1], chunk7[2], chunk7[3], chunk8[1], chunk8[2], chunk9[1], chunk9[2], chunk10[1], chunk10[2], chunk11[1], chunk11[2], chunk11[3])
+    correct <- ifelse(answers == response | answers2 == response |answers3 == response, TRUE, FALSE)
+    rt <- c(pageData$rt[1], pageData$rt[1], pageData$rt[1], pageData$rt[1], pageData$rt[2], pageData$rt[2], pageData$rt[2], pageData$rt[2], pageData$rt[3], pageData$rt[3], pageData$rt[3],pageData$rt[3], pageData$rt[4], pageData$rt[4],pageData$rt[5], pageData$rt[5],pageData$rt[6], pageData$rt[6],pageData$rt[7], pageData$rt[7],pageData$rt[7],pageData$rt[8],pageData$rt[8],pageData$rt[9],pageData$rt[9],pageData$rt[10],pageData$rt[10],pageData$rt[11],pageData$rt[11],pageData$rt[11])
+    newData <- data.frame(question=questionlabel, answer=answers, answer2=answers2, answer3=answers3, response=response, correct=correct, rt=rt, user=rep(j,length(answers)))
+    data <- rbind(data, newData)
+    
+  }
+  data$response2 <- as.character(data$response)
+  data$response3 <- as.numeric(data$response2)
+  data$correct2 <- ifelse(data$response2==data$answer | data$response2==data$answer2 | data$response2==data$answer3 |
+                            abs(data$response3 - data$answer2) < 0.031, TRUE, FALSE)
+  data$correct2 <- replace(data$correct2, is.na(data$correct2), FALSE)
+  data <- data[,c(1:2,5,7:8,11)]
+  names(data)[6] <- "correct"
+  return(data)
+}
+
+preTrigID <- function(i) {
+  
+  if (i=="TrigID") {
+    apiPrePage11 <- allData[(allData$unit=="11") & (allData$phase=="pre"),]}
+  
+  data <- data.frame()
+  
+  for (j in allStudents) {
+    
+    pageData <- apiPrePage11[apiPrePage11$user_id==j, ]
+    
+    if(nrow(pageData)==0) next
+    pageData <- fromJSON(as.character(pageData$data[1]))
+    pageData <- pageData[pageData$trial_type == "multi-choice" & pageData$internal_chunk_id == "0-0", ]
+    
+    pageData$user <- j  
+    pageData = pageData[!is.na(pageData$trial_type),]
+    
+    sin <- function(degree){
+      round(base::sin(degree/180*pi),digits=4)
+    }
+    cos <- function(degree){
+      round(base::cos(degree/180*pi),digits=4)
+    }
+    trigchoice <- function(choice,degree){
+      degree=as.numeric(degree)
+      switch(choice,'1'=sin(degree),'2'=-sin(degree),'3'=cos(degree),'4'=-cos(degree),-99)
+    }
+    vals = apply(pageData,1,function(r){return(trigchoice(r['response'],r['theta']))})
+    
+    pageData$delta = trimws(pageData$delta)
+    trigstimulus <- function(r){
+      s = paste0(r['func'],'(')
+      if (r['order']==1) {
+        if (r['xsign']=='-') {
+          s = paste0(s,'-')
+        }
+        s = paste0(s, r['theta'])
+        if (as.numeric(r['delta'])>=0) {
+          s = paste0(s, '+')
+        }
+        s = paste0(s, r['delta'],')')
+      } else {
+        s = paste0(s, r['delta'], r['xsign'], r['theta'], ')')
+      }
+    }
+    
+    
+    pageData$stimulus = apply(pageData,1,trigstimulus)
+    
+    pageData$correct = vals == sapply(pageData$stimulus,function(t){return(eval(parse(text=t)))})
+    pageData$response = factor(pageData$response,levels=1:4,labels=c('sin','-sin','cos','-cos'))
+    responsecombined <- paste0(pageData$response, "(", pageData$theta, ")")
+    pageData$responsecombined <- responsecombined
+    data <- rbind(data, pageData)
+  }
+  return(data[,c('user', 'trial_index','rt','response','responsecombined', 'func','xsign','delta','order','theta','stimulus','correct')])
+}
+
+##pretest results
+prePage1 <- figureRotation("Rotate")
+prePage1sum <-
+  prePage1 %>%
+  group_by(user) %>%
+  summarise(FigureRotation = round(sum(correct)/20*100,1))
+prePage1sum$user <- as.numeric(prePage1sum$user)
+
+
+prePage2 <- embeddedFigure("Figure")
+prePage2sum <-
+  prePage2 %>%
+  group_by(user) %>%
+  summarise(EmbeddedFigure = round(sum(correct)/20*100,1))
+prePage2sum$user <- as.numeric(prePage2sum$user)
+
+
+prePage3 <- letterSets("Letter1")
+prePage3sum <-
+  prePage3 %>%
+  group_by(user) %>%
+  summarise(LetterSets = round(sum(studentcorrect)/16*100,1))
+prePage3sum$user <- as.numeric(prePage3sum$user)
+#replace percent correct with z scores based on full REP sample (mean=70.446823,sd=26.029784)
+prePage3sum <- prePage3sum %>%
+  mutate(LetterSets = (LetterSets-70.446823)/26.029784)
+
+
+prePage3new <- letterSets("Letter2")
+prePage3newsum <-
+  prePage3new %>%
+  group_by(user) %>%
+  summarise(LetterSets = round(sum(correct)/15*100,1))
+prePage3newsum$user <- as.numeric(prePage3newsum$user)
+#replace percent correct with z scores based on full REP sample (mean=61.706138, sd=23.237504)
+prePage3newsum <- prePage3newsum %>%
+  mutate(LetterSets = (LetterSets-61.706138)/23.237504)
+
+
+prePage3Both <- rbind(prePage3sum,prePage3newsum)
+
+prePage4 <- vocab("Vocab1")
+prePage4sum <-
+  prePage4 %>%
+  group_by(user) %>%
+  summarise(Vocab = round(sum(studentcorrect)/30*100,1))
+prePage4sum$user <- as.numeric(prePage4sum$user)
+#replace percent correct with z scores based on full REP sample (mean=64.03411, sd=18.55935)
+prePage4sum <- prePage4sum %>%
+  mutate(Vocab = (Vocab-64.03411)/18.55935)
+
+
+prePage4new <- vocab("Vocab2")
+prePage4newsum <-
+  prePage4new %>%
+  group_by(user) %>%
+  summarise(Vocab = round(sum(correct)/36*100,1))
+prePage4newsum$user <- as.numeric(prePage4newsum$user)
+#replace percent correct with z scores based on full REP sample (mean=51.33816, sd=19.435852)
+prePage4newsum <- prePage4newsum %>%
+  mutate(Vocab = (Vocab-51.33816)/19.435852)
+
+
+prePage4Both <- rbind(prePage4sum,prePage4newsum)
+
+prePage5 <- addSubtract("AddSub")
+prePage5sum <-
+  prePage5 %>%
+  group_by(user) %>%
+  summarise(AddSubtract = round(sum(correct)/32*100,1))
+prePage5sum$user <- as.numeric(prePage5sum$user)
+
+
+prePage6 <- markXY("MarkXYI")
+prePage6sum <-
+  prePage6 %>%
+  group_by(user) %>%
+  summarise(MarkXYI = round(sum(correct)/10*100,1))
+prePage6sum$user <- as.numeric(prePage6sum$user)
+
+
+prePage7 <- markXY("MarkXYII")
+prePage7sum <-
+  prePage7 %>%
+  group_by(user) %>%
+  summarise(MarkXYII = round(sum(correct)/10*100,1))
+prePage7sum$user <- as.numeric(prePage7sum$user)
+
+
+prePage8 <- markTheta("MarkThetaI")
+tmp = prePage8$correct
+prePage8$correct = ifelse(tmp == "TRUE" | tmp == "FALSE", as.logical(tmp), as.logical(as.numeric(tmp)))
+prePage8sum <-
+  prePage8 %>%
+  group_by(user) %>%
+  summarise(MarkThetaI = round(sum(correct,na.rm=TRUE)/12*100,1))
+prePage8sum$user <- as.numeric(prePage8sum$user)
+
+
+prePage9 <- markTheta("MarkThetaII")
+tmp2 = prePage9$correct
+prePage9$correct = ifelse(tmp2 == "TRUE" | tmp2 == "FALSE", as.logical(tmp2), as.logical(as.numeric(tmp2)))
+prePage9sum <-
+  prePage9 %>%
+  group_by(user) %>%
+  summarise(MarkThetaII = round(sum(correct,na.rm=TRUE)/12*100,1))
+prePage9sum$user <- as.numeric(prePage9sum$user)
+
+
+prePage10 <- trigConcepts("RTT")
+
+
+prePage10$correct[is.na(prePage10$response)] = NA
+
+####################manual grade correction
+prePage10$correct <- ifelse((prePage10$user == 1762 & prePage10$question == "Q27") |
+                              (prePage10$user == 1793 & prePage10$question == "Q19") |
+                              (prePage10$user == 1670 & prePage10$question == "Q12") |
+                              (prePage10$user == 1973 & prePage10$question == "Q13") |
+                              (prePage10$user == 1793 & prePage10$question == "Q28") |
+                              (prePage10$user == 2080 & prePage10$question == "Q14") |
+                              (prePage10$user == 2004 & prePage10$question == "Q13") |
+                              (prePage10$user == 2004 & prePage10$question == "Q14") | 
+                              (prePage10$user == 2004 & prePage10$question == "Q16") |
+                              (prePage10$user == 2004 & prePage10$question == "Q20") |
+                              (prePage10$user == 2004 & prePage10$question == "Q22") |
+                              (prePage10$user == 2004 & prePage10$question == "Q23") |
+                              (prePage10$user == 2004 & prePage10$question == "Q24") |
+                              (prePage10$user == 2004 & prePage10$question == "Q29") |
+                              (prePage10$user == 2004 & prePage10$question == "Q30") |
+                              (prePage10$user == 1402 & prePage10$question == "Q10") |
+                              (prePage10$user == 1408 & prePage10$question == "Q10") | 
+                              (prePage10$user == 1648 & prePage10$question == "Q11") |
+                              (prePage10$user == 666 & prePage10$question == "Q11") |
+                              (prePage10$user == 1402 & prePage10$question == "Q11") |
+                              (prePage10$user == 1408 & prePage10$question == "Q11") |
+                              (prePage10$user == 1402 & prePage10$question == "Q12") |
+                              (prePage10$user == 1408 & prePage10$question == "Q12") |
+                              (prePage10$user == 691 & prePage10$question == "Q14") |
+                              (prePage10$user == 670 & prePage10$question == "Q14") | 
+                              (prePage10$user == 691 & prePage10$question == "Q15") |
+                              (prePage10$user == 452 & prePage10$question == "Q16") |
+                              (prePage10$user == 661 & prePage10$question == "Q16") |
+                              (prePage10$user == 499 & prePage10$question == "Q17") |
+                              (prePage10$user == 691 & prePage10$question == "Q17") |
+                              (prePage10$user == 670 & prePage10$question == "Q17") |
+                              (prePage10$user == 499 & prePage10$question == "Q18") |
+                              (prePage10$user == 691 & prePage10$question == "Q19") | 
+                              (prePage10$user == 691 & prePage10$question == "Q21") |
+                              (prePage10$user == 670 & prePage10$question == "Q21") |
+                              (prePage10$user == 691 & prePage10$question == "Q23") |
+                              (prePage10$user == 670 & prePage10$question == "Q23") |
+                              (prePage10$user == 670 & prePage10$question == "Q24") |
+                              (prePage10$user == 691 & prePage10$question == "Q26") |
+                              (prePage10$user == 670 & prePage10$question == "Q26") |
+                              (prePage10$user == 739 & prePage10$question == "Q27") | 
+                              (prePage10$user == 691 & prePage10$question == "Q28") |
+                              (prePage10$user == 691 & prePage10$question == "Q30") |
+                              (prePage10$user == 670 & prePage10$question == "Q30") |
+                              (prePage10$user == 1402 & prePage10$question == "Q9") |
+                              (prePage10$user == 1408 & prePage10$question == "Q9"),
+                            TRUE,prePage10$correct)
+prePage10sum <- 
+  prePage10 %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(correct, na.rm=TRUE)*100,1))
+prePage10sum$user <- as.numeric(prePage10sum$user)
+
+
+
+##divide right triangle trig into 5 pages
+prePage10part1 <- prePage10[prePage10$question=="Q1" | prePage10$question=="Q2" | prePage10$question=="Q3",]
+prePage10part2 <- prePage10[prePage10$question=="Q5" | prePage10$question=="Q6" | prePage10$question=="Q7",]
+prePage10part3 <- prePage10[prePage10$question=="Q9" | prePage10$question=="Q10" | prePage10$question=="Q11",]
+prePage10part4 <- prePage10[prePage10$question=="Q13" | prePage10$question=="Q14" | prePage10$question=="Q15" | prePage10$question=="Q16" | prePage10$question=="Q17" | prePage10$question=="Q18" | prePage10$question=="Q19" | prePage10$question=="Q20" | prePage10$question=="Q21",]
+prePage10part5 <- prePage10[prePage10$question=="Q22" | prePage10$question=="Q23" | prePage10$question=="Q24" | prePage10$question=="Q25" | prePage10$question=="Q26" | prePage10$question=="Q27" | prePage10$question=="Q28" | prePage10$question=="Q29" | prePage10$question=="Q30",]
+
+
+prePage10part1 <- 
+  prePage10part1 %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(correct,na.rm=TRUE)*100,1))
+colnames(prePage10part1)[2] <- "Right Triangle Trig I"
+prePage10part1$user <- as.numeric(prePage10part1$user)
+
+
+prePage10part2 <- 
+  prePage10part2 %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(correct,na.rm=TRUE)*100,1))
+colnames(prePage10part2)[2] <- "Right Triangle Trig II"
+prePage10part2$user <- as.numeric(prePage10part2$user)
+
+
+prePage10part3 <- 
+  prePage10part3 %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(correct,na.rm=TRUE)*100,1))
+colnames(prePage10part3)[2] <- "Right Triangle Trig III"
+prePage10part3$user <- as.numeric(prePage10part3$user)
+
+
+prePage10part4 <- 
+  prePage10part4 %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(correct,na.rm=TRUE)*100,1))
+colnames(prePage10part4)[2] <- "Right Triangle Trig IV"
+prePage10part4$user <- as.numeric(prePage10part4$user)
+
+
+prePage10part5 <- 
+  prePage10part5 %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(correct,na.rm=TRUE)*100,1))
+colnames(prePage10part5)[2] <- "Right Triangle Trig V"
+prePage10part5$user <- as.numeric(prePage10part5$user)
+
+
+prePage11 <- preTrigID("TrigID")
+prePage11sum <-
+  prePage11 %>%
+  group_by(user) %>%
+  summarise(TrigIDs = round(mean(correct)*100,1))
+prePage11sum$user <- as.numeric(prePage11sum$user)
+
+
+pretestResults <- list(prePage1sum,prePage2sum,prePage3Both,prePage4Both,prePage5sum,prePage6sum,prePage7sum,prePage8sum,prePage9sum,prePage10part1,prePage10part2,prePage10part3,prePage10part4,prePage10part5,prePage11sum) %>%
+  Reduce(function(dtf1,dtf2) inner_join(dtf1,dtf2,by="user"), .)
+
+
+saveRDS(pretestResults,"pretest.rds")
+
+```
+
+
+
+# #lesson.rds
+
+This code provides the process used to obtain the "lesson.rds" file. To execute this code, download the "REPandEarlyHS.csv", "LateHS.csv", and "combinedUserIDs" files, then run the code on your computer. 
+
+
+```{r,eval=F,echo=T}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(DT)
+library(jsonlite)
+
+
+#trig academy users
+userIDs <- read.csv("combinedUserIDs.csv")
+allStudents <- userIDs$TrigID
+#exclude those who didn't meet threshold
+noThreshold <- c(1719,1653,1735,1998,2038)
+allStudents <- allStudents [! allStudents %in% noThreshold]
+
+repResults <- read.csv("REPandEarlyHS.csv")
+repResults$X <- NULL
+tahomaResults <- read.csv("LateHS.csv")
+
+allData <- rbind(repResults,tahomaResults)
+
+LessonPage <- function(i) {
+  
+  apiLesson <- allData[(allData$unit==i) & (allData$phase=="lesson"),]
+  
+
+  #if more than one entry for a page, take only the first entry by entry# for each user 
+  apiLesson <- apiLesson[with(apiLesson, order(id)), ]
+  apiLesson <- apiLesson[!duplicated(paste(apiLesson$unit, apiLesson$user_id, sep=" ")), ]
+  data <- data.frame()
+  
+  
+  for(j in allStudents) {
+    userData <- apiLesson[apiLesson$user_id==j, ]
+    
+    #skip user and pages where data unreadable
+    if(i==20 & j==558) next 
+    if(i==30 & j==582) next
+    if(i==30 & j==558) next 
+    if(i==31 & j==533) next 
+    if(i==31 & j==582) next 
+    if(i==32 & j==582) next 
+    if(i==33 & j==582) next 
+    if(i==33 & j==558) next 
+    if(i==34 & j==533) next 
+    if(i==34 & j==582) next 
+    if(i==35 & j==533) next 
+    if(i==35 & j==582) next 
+    if(i==35 & j==558) next 
+    if(i==36 & j==582) next 
+    if(i==36 & j==558) next 
+    if(i==30 & j==702) next 
+    if(i==31 & j==663) next 
+    if(i==32 & j==663) next 
+    if(i==33 & j==702) next 
+    if(i==34 & j==663) next 
+    if(i==35 & j==663) next 
+    if(i==36 & j==671) next 
+    if(i==36 & j==663) next 
+    if(i==38 & j==533) next 
+    if(i==39 & j==533) next 
+    if(i==41 & j==533) next 
+    if(i==42 & j==533) next 
+    if(i==43 & j==533) next 
+    if(i==44 & j==533) next 
+    if(i==38 & j==663) next 
+    if(i==39 & j==663) next 
+    if(i==41 & j==663) next 
+    if(i==42 & j==663) next 
+    if(i==43 & j==663) next 
+    if(i==44 & j==663) next 
+    
+    if(nrow(userData)==0) next
+    
+    pageData <- data.frame(fromJSON(as.character(userData$data[1])))
+    newPageData <- pageData[!is.na(pageData$trials.chunkpos),]
+    
+    correct <- c()
+    firstCorrect <- c()
+    response.x <- c()
+    response.y <- c()
+    response.text <- c()
+    response.theta <- c()
+    response.choice <- c()
+    trialNumber <- c()
+    user <- c()
+    stimulus <- c()
+    goal.x <- c()
+    goal.y <- c()
+    goal.theta <- c()
+    rt <- c()
+    problem <- c()
+    page_id <- c()
+    
+    for(k in 1:length(newPageData$trials.attempts)) {
+      attemptsData <- data.frame(newPageData$trials.attempts[k])
+      trials <- newPageData$trials.goal
+      
+      for(L in 1:nrow(attemptsData)){
+        firstCorrect <- c(firstCorrect, newPageData$trials.firstcorrect[k])
+        stimulus <- c(stimulus, as.character(newPageData$trials.stimulus[k]))
+        goal.x <- c(goal.x, trials$x[k])
+        goal.y <- c(goal.y, trials$y[k])
+        goal.theta <- c(goal.theta,trials$theta[k])
+        user <- c(user, j)
+        page_id <- c(page_id,i)
+        attemptsRow <- attemptsData[L, ]
+        
+        trialNumber <- c(trialNumber, L)
+        
+        rt <- c(rt, attemptsRow$rt[1])
+        correct <- c(correct, attemptsRow$correct[1])
+        problem <- c(problem, attemptsRow$problem[1])
+        
+        
+        if(is.null(attemptsRow$response)){
+          response.x <- c(response.x, NA)
+          response.y <- c(response.y, NA)
+          response.text <- c(response.text, NA)
+          response.theta <- c(response.theta, NA)
+          response.choice <- c(response.choice, NA)
+        } else {
+          response <- attemptsRow$response
+          if(!is.null(response$x[[1]])){
+            response.x <- c(response.x, as.numeric(response$x[[1]]))
+          } else {
+            response.x <- c(response.x, NA)
+          }
+          if(!is.null(response$y[[1]])){
+            response.y <- c(response.y, as.numeric(response$y[[1]]))
+          } else {
+            response.y <- c(response.y, NA)
+          }
+          if(!is.null(response$text[[1]])){
+            response.text <- c(response.text, response$text[[1]])
+          } else {
+            response.text <- c(response.text, NA)
+          }
+          if(!is.null(response$theta[[1]])){
+            response.theta <- c(response.theta, as.numeric(response$theta[[1]]))
+          } else {
+            response.theta <- c(response.theta, NA)
+          }
+          if(!is.null(response$choice[[1]])){
+            response.choice <- c(response.choice, response$choice[[1]])
+          } else {
+            response.choice <- c(response.choice, NA)
+          }
+          
+        }
+        
+        #overwrite the extra storage for correct responses (glitch in database?)
+        #if(attemptsRow$correct==TRUE) break
+        #if(attemptsData$correct==TRUE) {print("the loop didn't break appropriately")}
+      }
+      
+    }
+    
+    finalData <- data.frame(user=user, rt=rt, problem=problem, stimulus=stimulus, goal.x=goal.x, goal.y=goal.y, goal.theta=goal.theta, firstCorrect=firstCorrect, correct=correct, trialNumber=trialNumber, response.theta=response.theta, response.x = response.x, response.y=response.y, response.text=response.text, response.choice=response.choice,page_id=page_id)
+    data <- bind_rows(data,finalData)
+  }
+  
+  return(data)
+  
+}
+
+# AllLessonPagesUnit1 <- function(indexList = c(1:2,5:13,15:45,47:57)){
+# 
+#   data <- data.frame()
+# 
+#   for (i in indexList) {
+#     page <- LessonPage(i)
+#     data <- bind_rows(data,page)
+#   }
+#   return(data)
+# }
+
+# AllLessonData <- AllLessonPagesUnit1("trigAcademy")
+# AllLessonDataSum <-
+#   AllLessonData %>%
+#   group_by(user) %>%
+#   summarise(PercentCorrect = round(mean(firstCorrect)*100,1),
+#             MedianRT = round(median(rt)/1000,1),
+#             nCorrect = sum(correct))
+
+
+unit1Ch1 <- c(1:2,5:13)
+unit1Ch2 <- c(15:22)
+unit1Ch3 <- c(23:29)
+unit1Ch4 <- c(30:36)
+unit1Ch5 <- c(37:45)
+unit1Ch6 <- c(47:57)
+
+###############################################################################################
+
+Unit1Ch1 <- function(i){
+
+  data <- data.frame()
+
+  for (i in unit1Ch1) {
+    page <- LessonPage(i)
+    data <- bind_rows(data,page)
+  }
+  return(data)
+}
+
+Unit1Ch1Trig <- Unit1Ch1("trigAcademy")
+Unit1Ch1Trig$Chapter <- "Chapter1"
+Unit1Ch1Trigsum <-
+  Unit1Ch1Trig %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+Unit1Ch1Trigsum$Chapter <- "Chapter1"
+
+
+#####################################################################################################
+
+Unit1Ch2 <- function(i){
+
+  data <- data.frame()
+
+  for (i in unit1Ch2) {
+    page <- LessonPage(i)
+    data <- bind_rows(data,page)
+  }
+  return(data)
+}
+
+Unit1Ch2Trig <- Unit1Ch2("trigAcademy")
+Unit1Ch2Trig$Chapter <- "Chapter2"
+Unit1Ch2Trigsum <-
+  Unit1Ch2Trig %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+Unit1Ch2Trig$Chapter <- "Chapter2"
+
+########################################################################################
+
+Unit1Ch3 <- function(i){
+
+  data <- data.frame()
+
+  for (i in unit1Ch3) {
+    page <- LessonPage(i)
+    data <- bind_rows(data,page)
+  }
+  return(data)
+}
+
+Unit1Ch3Trig <- Unit1Ch3("trigAcademy")
+Unit1Ch3Trig$Chapter <- "Chapter3"
+Unit1Ch3Trigsum <-
+  Unit1Ch3Trig %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+Unit1Ch3Trigsum$Chapter <- "Chapter3"
+
+
+###########################################################################################
+
+Unit1Ch4 <- function(i){
+
+  data <- data.frame()
+
+  for (i in unit1Ch4) {
+    page <- LessonPage(i)
+    data <- bind_rows(data,page)
+  }
+  return(data)
+}
+
+Unit1Ch4Trig <- Unit1Ch4("trigAcademy")
+Unit1Ch4Trig$Chapter <- "Chapter4"
+Unit1Ch4Trigsum <-
+  Unit1Ch4Trig %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+Unit1Ch4Trigsum$Chapter <- "Chapter4"
+
+
+##############################################################################################
+
+Unit1Ch5 <- function(i){
+
+  data <- data.frame()
+
+  for (i in unit1Ch5) {
+    print(i)
+    page <- LessonPage(i)
+    data <- bind_rows(data,page)
+  }
+  return(data)
+}
+
+Unit1Ch5Trig <- Unit1Ch5("trigAcademy")
+Unit1Ch5Trig$Chapter <- "Chapter5"
+Unit1Ch5Trigsum <-
+  Unit1Ch5Trig %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+Unit1Ch5Trigsum$Chapter <- "Chapter5"
+
+
+###################################################################################################
+
+Unit1Ch6 <- function(i){
+
+  data <- data.frame()
+
+  for (i in unit1Ch6) {
+    page <- LessonPage(i)
+    data <- bind_rows(data,page)
+  }
+  return(data)
+}
+
+Unit1Ch6Trig <- Unit1Ch6("trigAcademy")
+Unit1Ch6Trig$Chapter <- "Chapter6"
+Unit1Ch6Trigsum <-
+  Unit1Ch6Trig %>%
+  group_by(user) %>%
+  summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
+Unit1Ch6Trigsum$Chapter <- "Chapter6"
+
+
+##################################
+
+AllChaptersDetail <- bind_rows(Unit1Ch1Trig,Unit1Ch2Trig,Unit1Ch3Trig,Unit1Ch4Trig,Unit1Ch5Trig,Unit1Ch6Trig)
+
+#add problem order # 
+questionText <- read.csv("TrigAcademyQuestionText.csv")
+names(questionText)[2] <- "problem"
+
+AllChaptersDetail <- merge(AllChaptersDetail,questionText[,1:2])
+
+saveRDS(AllChaptersDetail,"lesson.rds")
+
+
+```
+
+
+
+# #posttestAll.rds
+
+This code provides the process used to obtain the "posttestAll.rds" file. To execute this code, download the "REPandEarlyHS.csv", "LateHS.csv", and "combinedUserIDs" files, then run the code on your computer. 
+
+```{r,eval=F,echo=T}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(jsonlite)
+library(magrittr)
+library(rvest)
+library(tidyr)
+
+
+userIDs <- read.csv("combinedUserIDs.csv")
+#exclude those who didn't meet sm threshold
+noThreshold <- c(1719,1653,1735,1998,2038)
+userIDs <- userIDs [! userIDs$TrigID %in% noThreshold,]
+
+##community college raw results
+repResults <- read.csv("REPandEarlyHS.csv")
+##hs raw results
+tahomaResults <- read.csv("LateHS.csv")
+
+
+tahomaIDs <- userIDs[(userIDs$Group == "TaFall16") | (userIDs$Group == "TaSum17") | (userIDs$Group == "TaFall17"),]
+tahomaIDs <- tahomaIDs$TrigID
+repIDs <- userIDs[(userIDs$Group == "REP17-18") | (userIDs$Group == "REP16"),]
+repIDs <- repIDs$TrigID
+
+groupBIDs <- userIDs[!is.na(userIDs$Pool),] 
+groupBIDs <- groupBIDs[(groupBIDs$Pool=="B"),] 
+groupBIDs <- groupBIDs$TrigID
+
+nonGroupBIDs <- userIDs[is.na(userIDs$Pool) | (userIDs$Pool=="A"),] 
+nonGroupBIDs <- nonGroupBIDs$TrigID
+
+#relabel tahoma posttest IDs so they align with REP posttest IDs (were off because of radians test)
+
+tahomaResults$id <- as.integer(tahomaResults$id)
+tahomaResults$user_id <- as.character(tahomaResults$user_id)
+
+tahomaResults$unit <- as.numeric(as.character(tahomaResults$unit))
+tahomaResults$unit <- ifelse(tahomaResults$phase=="post" & tahomaResults$unit==1,1,
+                      ifelse(tahomaResults$phase=="post" & tahomaResults$unit==2,2,
+                      ifelse(tahomaResults$phase=="post" & tahomaResults$unit==3,"markrad",
+                      ifelse(tahomaResults$phase=="post" & tahomaResults$unit==4,3,
+                      ifelse(tahomaResults$phase=="post" & tahomaResults$unit==5,4,
+                      ifelse(tahomaResults$phase=="post" & tahomaResults$unit==6,5,tahomaResults$unit))))))
+
+
+#combine results
+repResults$X <- NULL
+
+allData<- rbind(tahomaResults,repResults)
+
+#combine IDs
+allStudents <- c(repIDs,tahomaIDs)
+
+##isolate 62 user IDs (non-two group analysis)
+repIDs14 <- userIDs[(userIDs$Group == "REP16"),]
+repIDs14 <- repIDs14$TrigID
+combined62 <- c(tahomaIDs,repIDs14)
+
+###post page 4 & 5 data###########################################################
+postPage45 <- function(h,i) {
+  
+  #this pulls the first post-lesson posttest for all students (for group B students, TI1 is stored as    "survey")
+  if (i=="CirclePost") {
+    apiTrigID <- allData[(allData$unit=="4") & (allData$phase=="post"),]}
+  
+  if (i=="NoCirclePost") {
+    apiTrigID <- allData[(allData$unit=="5") & (allData$phase=="post"),]}
+  
+  #sorting by timestamp and taking the first instance gives the first posttest
+  if (h=="Test1") {
+    filteredApiTrigID = data.table(apiTrigID[apiTrigID$user_id %in% allStudents, ])
+    filteredApiTrigID = filteredApiTrigID %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(1L)
+  }
+  
+    #sorting by timestamp and taking the second instance gives the second posttest (only for 62 users)
+    if (h=="Test2") {
+    filteredApiTrigID = data.table(apiTrigID[apiTrigID$user_id %in% combined62, ])
+    filteredApiTrigID = filteredApiTrigID %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(2L)
+  }
+  
+  data <- data.frame()
+  
+  
+  for (row in 1:nrow(filteredApiTrigID)) {
+    
+    allData2 <- filteredApiTrigID[row, ]
+    j = as.numeric(as.character(allData2$user_id))
+    
+    if(nrow(allData2)==0) next
+    pageData <- fromJSON(as.character(allData2$data[1]))
+    user <- rep(j,nrow(pageData))
+    pageData <- pageData[pageData$trial_type == "multi-choice", ]
+    pageData$user <- j  
+    pageData = pageData[!is.na(pageData$trial_type),]
+    if (i=="NoCirclePost") {pageData <- pageData[pageData$internal_chunk_id=="0-0.1-0", ]}
+    
+    sin <- function(degree){
+      round(base::sin(degree/180*pi),digits=4)
+    }
+    cos <- function(degree){
+      round(base::cos(degree/180*pi),digits=4)
+    }
+    trigchoice <- function(choice,degree){
+      degree=as.numeric(degree)
+      switch(choice,'1'=sin(degree),'2'=-sin(degree),'3'=cos(degree),'4'=-cos(degree),-99)
+    }
+    
+    # if (i=="CirclePost") {vals = apply(pageData,1,function(r){return(trigchoice(r$response,r$theta))})}
+    if (i=="CirclePost" | i=="NoCirclePost") {vals = apply(pageData,1,function(r){return(trigchoice(r[['response']],r[['theta']]))})}
+    
+    pageData$delta = trimws(pageData$delta)
+    print(j)
+    trigstimulus <- function(r){
+      s = paste0(r['func'],'(')
+      if (r['order']==1) {
+        if (r['xsign']=='-') {
+          s = paste0(s,'-')
+        }
+        s = paste0(s, r['theta'])
+        if (as.numeric(r['delta'])>=0) {
+          s = paste0(s, '+')
+        }
+        s = paste0(s, r['delta'],')')
+      } else {
+        s = paste0(s, r['delta'], r['xsign'], r['theta'], ')')
+      }
+    }
+    
+    pageData$stimulus = apply(pageData,1,trigstimulus)
+    
+    pageData$correct = vals == sapply(pageData$stimulus,function(t){return(eval(parse(text=t)))})
+    pageData$response = factor(pageData$response,levels=1:4,labels=c('sin','-sin','cos','-cos'))
+    responsecombined <- paste0(pageData$response, "(", pageData$theta, ")")
+    pageData$responsecombined <- responsecombined
+    data <- bind_rows(data, pageData)
+    
+  }
+  
+  return(data[,c('user', 'trial_index','rt','response','responsecombined', 'func','xsign','delta','order','theta','stimulus','correct')])
+  
+}
+
+##################################################posttest 1#####################
+#######note: these results are for the first after-lesson posttest for all groups, including group b students (meaning these are the "posttest 2" results for group b)
+trigIDCirclePost <- postPage45("Test1","CirclePost")
+trigIDCirclePostsum <-
+  trigIDCirclePost %>%
+  group_by(user) %>%
+  summarise(PostTrigIDs1 = round(mean(correct)*100,1))
+trigIDCirclePostsum$user <- as.numeric(trigIDCirclePostsum$user)
+
+
+trigIDNoCirclePost <- postPage45("Test1","NoCirclePost")
+trigIDNoCirclePostsum <-
+  trigIDNoCirclePost %>%
+  group_by(user) %>%
+  summarise(PostTrigIDs2 = round(mean(correct)*100,1))
+trigIDNoCirclePostsum$user <- as.numeric(trigIDNoCirclePostsum$user)
+
+trigIDResults <- merge(trigIDCirclePostsum,trigIDNoCirclePostsum,by="user")
+names(trigIDResults)[2] <- "trigIDCircle"
+names(trigIDResults)[3] <- "trigIDNoCircle"
+
+trigIDResultsDetail <- rbind(trigIDCirclePost,trigIDNoCirclePost)
+
+saveRDS(trigIDResultsDetail,"posttestAll.rds")
+
+###########################posttest 2 results for 40 students#################################
+# trigIDCirclePostTest2 <- postPage45("Test2","CirclePost")
+# trigIDCirclePostsumTest2 <-
+#   trigIDCirclePostTest2 %>%
+#   group_by(user) %>%
+#   summarise(PostTrigIDs1Test2 = round(mean(correct)*100,1))
+# trigIDCirclePostsumTest2$user <- as.numeric(trigIDCirclePostsumTest2$user)
+# 
+# 
+# trigIDNoCirclePostTest2 <- postPage45("Test2","NoCirclePost")
+# trigIDNoCirclePostsumTest2 <-
+#   trigIDNoCirclePostTest2 %>%
+#   group_by(user) %>%
+#   summarise(PostTrigIDs2Test2 = round(mean(correct)*100,1))
+# trigIDNoCirclePostsumTest2$user <- as.numeric(trigIDNoCirclePostsumTest2$user)
+# 
+# trigIDResultsTest2 <- merge(trigIDCirclePostsumTest2,trigIDNoCirclePostsumTest2,by="user")
+# names(trigIDResultsTest2)[2] <- "trigIDCircleTest2"
+# names(trigIDResultsTest2)[3] <- "trigIDNoCircleTest2"
+# 
+# trigIDResultsDetailTest2 <- rbind(trigIDCirclePostTest2,trigIDNoCirclePostTest2)
+# 
+# saveRDS(trigIDResultsDetailTest2,"posttest2-40.rds")
+
+```
+
+
+# #posttest39.rds
+
+This code provides the process used to obtain the "posttest39.rds" file. To execute this code, download the "REPandEarlyHS.csv" and "combinedUserIDs" files, then run the code on your computer. 
+
+
+```{r,eval=F,echo=T}
+
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(jsonlite)
+library(magrittr)
+library(rvest)
+library(tidyr)
+
+userIDs <- read.csv("combinedUserIDs.csv")
+#exclude those who didn't meet threshold
+noThreshold <- c(1719,1653,1735,1998,2038)
+userIDs <- userIDs [! userIDs$TrigID %in% noThreshold,]
+#reduce to 39 students
+userIDs <- userIDs [userIDs$Group=="REP17-18",]
+allStudents <- userIDs$TrigID
+
+#find students in group A
+userIDsA <- userIDs [userIDs$Pool=="A",]
+groupAThres <- userIDsA$TrigID
+
+#find students in group B
+userIDsB <- userIDs [userIDs$Pool=="B",]
+groupBThres <- userIDsB$TrigID
+
+repResults <- read.csv("REPandEarlyHS.csv")
+
+postPage45 <- function(i) {
+  
+  if (i=="CirclePost1A" | i=="CirclePostIIA" | i=="CirclePostIIB") {
+    apiTrigID <- repResults[(repResults$unit=="4") & (repResults$phase=="post"),]}
+
+  
+  if (i=="CirclePostSurvey") {
+    apiTrigID <- repResults[(repResults$unit=="4") & (repResults$phase=="survey"),]}
+  
+  
+  if (i=="NoCirclePost1A" | i=="NoCirclePostIIA" | i=="NoCirclePostIIB") {
+    apiTrigID <- repResults[(repResults$unit=="5") & (repResults$phase=="post"),]}
+
+  
+  if (i=="NoCirclePostSurvey") {
+    apiTrigID <- repResults[(repResults$unit=="5") & (repResults$phase=="survey"),]}
+  
+  
+  if (i=="CirclePost1A" | i=="NoCirclePost1A") {
+    filteredApiTrigID = data.table(apiTrigID[apiTrigID$user_id %in% groupAThres, ])
+    filteredApiTrigID = filteredApiTrigID %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(1L)
+  }
+  
+  if (i=="CirclePostSurvey" | i=="NoCirclePostSurvey" | i=="CirclePostIIB" | i=="NoCirclePostIIB") {
+    filteredApiTrigID = data.table(apiTrigID[apiTrigID$user_id %in% groupBThres, ])
+    filteredApiTrigID = filteredApiTrigID %>% 
+      group_by(user_id) %>%
+      arrange(desc(id)) %>% 
+      slice(1L)
+  }
+  
+  if (i=="CirclePostIIA" | i=="NoCirclePostIIA") {
+    filteredApiTrigID = data.table(apiTrigID[apiTrigID$user_id %in% groupAThres, ])
+    filteredApiTrigID = filteredApiTrigID %>% 
+      group_by(user_id) %>%
+      arrange(id) %>% 
+      slice(1L)
+  }
+  
+  data <- data.frame()
+  
+  
+  for (row in 1:nrow(filteredApiTrigID)) {
+    
+    allData2 <- filteredApiTrigID[row, ]
+    j = allData2$user_id
+    
+    if(nrow(allData2)==0) next
+    pageData <- fromJSON(as.character(allData2$data[1]))
+    user <- rep(j,nrow(pageData))
+    pageData <- pageData[pageData$trial_type == "multi-choice", ]
+    pageData$user <- j  
+    pageData = pageData[!is.na(pageData$trial_type),]
+    if (i=="NoCirclePostSurvey" | i=="NoCirclePost1A" | i=="NoCirclePostIIB" | i=="NoCirclePostIIA") {pageData <- pageData[pageData$internal_chunk_id=="0-0.1-0", ]}
+
+    sin <- function(degree){
+      round(base::sin(degree/180*pi),digits=4)
+    }
+    cos <- function(degree){
+      round(base::cos(degree/180*pi),digits=4)
+    }
+    trigchoice <- function(choice,degree){
+      degree=as.numeric(degree)
+      switch(choice,'1'=sin(degree),'2'=-sin(degree),'3'=cos(degree),'4'=-cos(degree),-99)
+    }
+    
+    if (i=="CirclePost1A" | i=="CirclePostIIA" | i=="CirclePostIIB") {vals = apply(pageData,1,function(r){return(trigchoice(r$response,r$theta))})}
+    if (i=="CirclePostSurvey" | i=="NoCirclePostSurvey" | i=="NoCirclePost1A" | i=="NoCirclePostIIB" | i=="NoCirclePostIIA") {vals = apply(pageData,1,function(r){return(trigchoice(r['response'],r['theta']))})}
+    
+    pageData$delta = trimws(pageData$delta)
+    trigstimulus <- function(r){
+      s = paste0(r['func'],'(')
+      if (r['order']==1) {
+        if (r['xsign']=='-') {
+          s = paste0(s,'-')
+        }
+        s = paste0(s, r['theta'])
+        if (as.numeric(r['delta'])>=0) {
+          s = paste0(s, '+')
+        }
+        s = paste0(s, r['delta'],')')
+      } else {
+        s = paste0(s, r['delta'], r['xsign'], r['theta'], ')')
+      }
+    }
+    
+    pageData$stimulus = apply(pageData,1,trigstimulus)
+    
+    pageData$correct = vals == sapply(pageData$stimulus,function(t){return(eval(parse(text=t)))})
+    pageData$response = factor(pageData$response,levels=1:4,labels=c('sin','-sin','cos','-cos'))
+    responsecombined <- paste0(pageData$response, "(", pageData$theta, ")")
+    pageData$responsecombined <- responsecombined
+    if (! ('events' %in% names(pageData))) {
+      pageData$events = NA
+    }
+    pageData = pageData %>% mutate(events=purrr::map(events,function(x){if(!is.data.frame(x))
+    {return(NA)}
+      else {
+        return(jsonlite::flatten(x))}}),
+        nevents=purrr::map_dbl(events,function(x){return(ifelse(is.data.frame(x),nrow(x),0))}))
+    data <- bind_rows(data, pageData)
+    
+  }
+  
+  return(data %>% select(-trial_index_global,-key_press,-trial_type,-internal_chunk_id))
+  
+}
+
+
+#################posttest I results#############################################
+trigIDCirclePost1A <- postPage45("CirclePost1A")
+trigIDCirclePost1A$support <- "Circle"
+trigIDCirclePost1Asum <-
+  trigIDCirclePost1A %>%
+  group_by(user) %>%
+  summarise(PostTrigIDs1 = round(mean(correct)*100,1))
+trigIDCirclePost1Asum$user <- as.numeric(trigIDCirclePost1Asum$user)
+
+trigIDCirclePost1B <- postPage45("CirclePostSurvey")
+trigIDCirclePost1B$support <- "Circle"
+trigIDCirclePost1Bsum <-
+  trigIDCirclePost1B %>%
+  group_by(user) %>%
+  summarise(PostTrigIDs1 = round(mean(correct)*100,1))
+trigIDCirclePost1Bsum$user <- as.numeric(trigIDCirclePost1Bsum$user)
+
+
+
+trigIDNoCirclePost1A <- postPage45("NoCirclePost1A")
+trigIDNoCirclePost1A$support <- "NoCircle"
+trigIDNoCirclePost1Asum <-
+  trigIDNoCirclePost1A %>%
+  group_by(user) %>%
+  summarise(PostTrigIDsII = round(mean(correct)*100,1))
+trigIDNoCirclePost1Asum$user <- as.numeric(trigIDNoCirclePost1Asum$user)
+
+trigIDNoCirclePost1B <- postPage45("NoCirclePostSurvey")
+trigIDNoCirclePost1B$support <- "NoCircle"
+trigIDNoCirclePost1Bsum <-
+  trigIDNoCirclePost1B %>%
+  group_by(user) %>%
+  summarise(PostTrigIDsII = round(mean(correct)*100,1))
+trigIDNoCirclePost1Bsum$user <- as.numeric(trigIDNoCirclePost1Bsum$user)
+
+
+posttest1ResultsA <- list(trigIDCirclePost1Asum,trigIDNoCirclePost1Asum) %>%
+  Reduce(function(dtf1,dtf2) left_join(dtf1,dtf2,by="user"), .)
+posttest1ResultsA <- posttest1ResultsA[posttest1ResultsA$user %in% groupAThres,] 
+
+posttest1ResultsB <- list(trigIDCirclePost1Bsum,trigIDNoCirclePost1Bsum) %>%
+  Reduce(function(dtf1,dtf2) left_join(dtf1,dtf2,by="user"), .)
+posttest1ResultsB <- posttest1ResultsB[posttest1ResultsB$user %in% groupBThres,] 
+
+
+#################posttest II results#############################################
+trigIDCirclePost2A <- postPage45("CirclePostIIA")
+trigIDCirclePost2A$support <- "Circle"
+trigIDCirclePost2Asum <-
+  trigIDCirclePost2A %>%
+  group_by(user) %>%
+  summarise(Post2TrigIDs1 = round(mean(correct)*100,1))
+trigIDCirclePost2Asum$user <- as.numeric(trigIDCirclePost2Asum$user)
+
+trigIDCirclePost2B <- postPage45("CirclePostIIB")
+trigIDCirclePost2B$support <- "Circle"
+trigIDCirclePost2Bsum <-
+  trigIDCirclePost2B %>%
+  group_by(user) %>%
+  summarise(Post2TrigIDs1 = round(mean(correct)*100,1))
+trigIDCirclePost2Bsum$user <- as.numeric(trigIDCirclePost2Bsum$user)
+
+
+
+trigIDNoCirclePost2A <- postPage45("NoCirclePostIIA")
+trigIDNoCirclePost2A$support <- "NoCircle"
+trigIDNoCirclePost2Asum <-
+  trigIDNoCirclePost2A %>%
+  group_by(user) %>%
+  summarise(Post2TrigIDsII = round(mean(correct)*100,1))
+trigIDNoCirclePost2Asum$user <- as.numeric(trigIDNoCirclePost2Asum$user)
+
+trigIDNoCirclePost2B <- postPage45("NoCirclePostIIB")
+trigIDNoCirclePost2B$support <- "NoCircle"
+trigIDNoCirclePost2Bsum <-
+  trigIDNoCirclePost2B %>%
+  group_by(user) %>%
+  summarise(Post2TrigIDsII = round(mean(correct)*100,1))
+trigIDNoCirclePost2Bsum$user <- as.numeric(trigIDNoCirclePost2Bsum$user)
+
+
+posttest2ResultsA <- list(trigIDCirclePost2Asum,trigIDNoCirclePost2Asum) %>%
+  Reduce(function(dtf1,dtf2) left_join(dtf1,dtf2,by="user"), .)
+posttest2ResultsA <- posttest2ResultsA[posttest2ResultsA$user %in% groupAThres,] 
+
+
+posttest2ResultsB <- list(trigIDCirclePost2Bsum,trigIDNoCirclePost2Bsum) %>%
+  Reduce(function(dtf1,dtf2) left_join(dtf1,dtf2,by="user"), .)
+posttest2ResultsB <- posttest2ResultsB[posttest2ResultsB$user %in% groupBThres,] 
+
+posttest1ResultsA$group = "LE"
+posttest1ResultsB$group = "LL"
+posttest2ResultsA$group = "LE"
+posttest2ResultsB$group = "LL"
+
+posttest1Results <- rbind(posttest1ResultsA,posttest1ResultsB)
+names(posttest1Results)[2] <- "TI1Circle"
+names(posttest1Results)[3] <- "TI1NoCircle"
+
+posttest2Results <- rbind(posttest2ResultsA,posttest2ResultsB)
+names(posttest2Results)[2] <- "TI2Circle"
+names(posttest2Results)[3] <- "TI2NoCircle"
+
+trigIDNoCirclePost1A$responses <- NULL
+posttest1ResultsADetail <- rbind(trigIDCirclePost1A,trigIDNoCirclePost1A)
+posttest1ResultsADetail$group = "LE"
+posttest1ResultsADetail$test = "TI1"
+
+trigIDNoCirclePost1B$responses <- NULL
+posttest1ResultsBDetail <- rbind(trigIDCirclePost1B,trigIDNoCirclePost1B)
+posttest1ResultsBDetail$group = "LL"
+posttest1ResultsBDetail$test = "TI1"
+
+trigIDNoCirclePost2A$responses <- NULL
+posttest2ResultsADetail <- rbind(trigIDCirclePost2A,trigIDNoCirclePost2A)
+posttest2ResultsADetail$group = "LE"
+posttest2ResultsADetail$test = "TI2"
+
+trigIDNoCirclePost2B$responses <- NULL
+posttest2ResultsBDetail <- rbind(trigIDCirclePost2B,trigIDNoCirclePost2B)
+posttest2ResultsBDetail$group = "LL"
+posttest2ResultsBDetail$test = "TI2"
+
+posttest39 <- rbind(posttest1ResultsADetail,posttest1ResultsBDetail,posttest2ResultsADetail,posttest2ResultsBDetail)
+
+
+saveRDS(posttest39,"posttest39.rds")
+
+```
+

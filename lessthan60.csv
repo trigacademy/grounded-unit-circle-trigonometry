@@ -1,0 +1,77 @@
+Problem,Chapter_No,Chapter,Page_No,Page,ProblemText
+12,1,XY Positions,2,Mirror Images,"Is this statement true or false? 
+The position at x = -(-3) is the mirror image of the mirror image of the position at x = 3.
+True (correct)
+False"
+97,2,Circle Positions,16,Theta and Degrees,"Perform a rotation of 360 degrees, observe where it ends up, and think about what it means. Do rotations of different amounts result in different positions on the circle?
+yes
+sometimes but not always (correct)
+Never"
+153,3,Circle Rotations,26,Rotations to Same Positions - continued,"What is the value of theta, between -360 degrees and 0 degrees, that corresponds to this same position? Enter this value now! (correct answer = -15)"
+156,3,Circle Rotations,27,Moving on a Line,"Many mathematical ideas have their corresponding movements in the numerical space. This is true not just on the unit circle, but also on the number line at the very beginning of this course.
+As you know, the origin of a horizontal axis is at position x = 0. Now, imagine a point 3 positive units away from the origin. Starting from that position, perform the following movements: 
+move 2 units in the positive direction
+move 3 units in the negative direction
+move 4 units in the negative direction.
+Where would the point end up?  Mark that final position. 
+(correct answer = -2)"
+159,3,Circle Rotations,27,Moving on a Line,"Now let's think about motions a bit more generally. For every motion in the positive direction, is there a motion in the negative direction that cancels that motion completely?
+always (correct)
+sometimes
+Never"
+256,4,Linking the Circle with the XY Plane,36,Seeing the Invisible Sine and Cosine,"Now, mark 250 degrees on the circle, and directly enter the value of cos(250 degrees)."
+322,5,"Rotations, Reflections and Positions",39,Sine and Cosine of Up-Down Reflections,"Let's look at another example.
+Mark a circle position theta in between 90 degrees and 180 degrees, such that sin(theta) = 0.3.
+(correct answer = 162.54)"
+350,5,"Rotations, Reflections and Positions",40,Diametrically Opposite Circle Positions,"We asked Mario, Luigi, and Princess Peach to give an expression that corresponds to the diametrical opposite of -theta. Here are the expressions they wrote:
+Mario: (-180 degrees-theta)
+Luigi: (theta-180 degrees)
+Princess Peach: (-theta+180 degrees)
+Which one of them got it wrong?
+Mario
+Luigi (correct)
+Princess Peach"
+351,5,"Rotations, Reflections and Positions",40,Diametrically Opposite Circle Positions,"The second expression, (180 degrees-theta), is very different though. In this case, we start at 180 degrees and rotate theta degrees in the negative direction. This is not the diametrical opposite of ? (unless theta is 0 degrees).
+Again, suppose that theta = 20 degrees. The canvas is currently displaying its diametrical opposite position of theta = 20 degrees as an open dot. However, it is not the same position as (180 degrees-theta), which is numerically (180 degrees-20 degrees) = 160 degrees and can be reached by starting at 180 degrees and then rotating 20 degrees in the negative direction.
+Now, mark the position (180 degrees-theta) on the diagram, and then click Submit.
+(correct answer = 160)"
+437,5,"Rotations, Reflections and Positions",43,Quarter Turn Rotations,"At the end of this section, we asked Mario, Luigi, and Princess Peach to give an expression that represents a position on the circle corresponding to the quarter-turn rotation of -theta. One correct answer is (-theta+90 degrees), but none of them chose that answer.
+Here are the expressions they wrote:
+Mario: (theta-90 degrees)
+Luigi: (90 degrees-theta)
+Princess Peach: (theta+90 degrees)
+Which one of them got it correct?
+Mario
+Luigi (correct)
+Princess Peach"
+449,5,"Rotations, Reflections and Positions",44,Quarter-Turn Rotations: Horizontal and Vertical Aspects,"If you look at the vertical position of 20 degrees, you will notice that it is a little bit above the origin. You can read off its vertical position (i.e., its y-coordinate) and see that it is about 0.34.
+Now, consider the open point's horizontal position. As you can see, it is a bit to the left of the origin.
+Try to read off the open point's horizontal, x-coordinate. Is it the same or a different from the vertical, y-coordinate of 20 degrees?
+Same
+Different (correct)"
+452,5,"Rotations, Reflections and Positions",44,Quarter-Turn Rotations: Horizontal and Vertical Aspects,"Luigi also agrees that the two values are different, but he is trying to give a new reason to explain this difference.
+He says, ""The vertical position of 20 degrees is in the vertical direction, while the horizontal position of (90 degrees+20 degrees) is in the horizontal direction. That's why they don't have the same value.""
+What do you think of Luigi's explanation on the different values? Is it reasonable?
+Yes
+No (correct)"
+466,5,"Rotations, Reflections and Positions",44,Quarter-Turn Rotations: Horizontal and Vertical Aspects,"Are the horizontal position of your point and the vertical position of its quarter-turn rotation both positive?
+Yes (correct)
+No"
+467,5,"Rotations, Reflections and Positions",44,Quarter-Turn Rotations: Horizontal and Vertical Aspects,"Given what you have observed, you should be able to appreciate the relationship between the x-coordinate of your point with the y-coordinate of its 90 degrees-rotation. Do they have the same value, the opposite value, or neither?
+Same (correct)
+Opposite
+Neither"
+472,5,"Rotations, Reflections and Positions",44,Quarter-Turn Rotations: Horizontal and Vertical Aspects,"How about the x-coordinate of 10 degrees and the x-coordinate of (90 degrees+10 degrees)? Are they the same, opposite, or neither?
+Same
+Opposite
+Neither (correct)"
+575,6,Comparing Values,55,Extending to Less Familiar Problems,"Which expression has the same numerical value as sin(50 degrees-90 degrees)?
+sin(50 degrees)
+-sin(50 degrees)
+cos(50 degrees)
+-cos(50 degrees) (correct)"
+590,6,Comparing Values,56,Practice - I,"Which expression has the same numerical value as sin(180 degrees-10 degrees)?
+sin(10 degrees) (correct)
+-sin(10 degrees)
+cos(10 degrees)
+-cos(10 degrees)"
