@@ -1,0 +1,18 @@
+Heading,Text
+SA.PutTogetherChair,I would be good at seeing how several parts should be put together to make a piece of furniture like a chair.
+SA.DescribeRelationships,I am good at understanding statements that describe spatial relationships.
+SA.DiagramsHelpful,I find diagrams helpful when I try to understand mathematical relationships.
+MA.GoodatMath,I am good at math.
+MA.ImportantDoWellMath,It is important to me that I do well in math.
+MA.SomePeopleBetterMath,Some people are naturally better at math than others.
+MA.EffortImportant,The effort we put into learning math is more important than our innate abilities.
+MA.UnderstandIdeasQuickly,People who are good at math are those who understand new math ideas really quickly.
+MA.ThinkCarefully,To do well in math it's important to take your time and think carefully.
+MA.PlugNumbers,"When I do math, I look for formulas I can plug numbers into without thinking too much about the specific context or meaning of the problem."
+MA.PatternsDescribeWorld,Math is a subject of patterns that describe the world more than a subject of calculations and rules.
+MA.ExcitingIntimidating,"I see math more as ""exciting"" than ""intimidating."""
+HSMathClass,How many math classes did you take in high school?
+PostHSMath,How many math classes have you taken since high school?
+,
+,
+1=Strongly disagree; 2=Disagree; 3=Somewhat disagree; 4=Neither agree nor disagree; 5=Somewhat agree; 6=Agree; 7=Strongly agree,

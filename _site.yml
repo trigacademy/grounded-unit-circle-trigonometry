@@ -12,7 +12,7 @@ navbar:
       href: AllCohorts.html
     - text: "Data Process"
       href: dataProcess.html
-    - text: "Raw Data"
-      href: rawData.html
+    - text: "Materials"
+      href: materials.html
     - text: "CC Pre Results"
       href: CCPreResults.html

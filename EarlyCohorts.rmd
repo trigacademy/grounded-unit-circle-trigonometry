@@ -12,9 +12,9 @@ output:
 ---
 The analyses on this page were performed on 62 students from the following four cohorts: 14 community college students from fall 2016, 25 high school students from fall 2016, 19 high school students from summer 2017, and 4 high school stuents from fall 2017. The 39 students who completed the immediate vs. delayed intervention study were excluded from these analyses because we requried these students to meet a threshold of 50.0% on the SM portions of the AMSA to participate in our study. This requirement would likely skew the effect SM would have on TI1 and lesson performance. 
 
-The code in the following analyses uses the following data frames: pretest.rds, lesson.rds, and posttestAll.rds. The raw data can be downloaded from the "Raw Data" tab, and the process used to get the raw data into the pretest.rds, lesson.rds, and posttestAll.rds format can be found in the "Data Process" tab. 
+The code in the following analyses uses the following data frames: pretest.rds, lesson.rds, and posttestAll.rds. The raw data can be downloaded from the "Materials" tab, and the process used to get the raw data into the pretest.rds, lesson.rds, and posttestAll.rds format can be found in the "Data Process" tab. 
 
-# How does TI performance relate to SM score? 
+# Can SM score predict posttest performance?
 ```{r,message=FALSE,warning=FALSE}
 
 library(lme4)

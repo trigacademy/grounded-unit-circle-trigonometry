@@ -1,0 +1,28 @@
+---
+title: "Materials"
+
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_depth: 1
+    toc_float:
+      collapsed: true
+    code_folding: hide
+    
+
+---
+
+On this page you can download the raw results data as it was pulled directly from our database. You can also download the contents of our entire curriculum including the pretest, lesson materials, and posttest. 
+
+# Raw Data
+
+Download Post Jan 2017 High School Raw Data: https://osf.io/w4jrt/ 
+
+Download All Community College and Pre Jan 2017 HS Raw Data: https://osf.io/fx9v4/
+
+Download User ID Data: https://osf.io/6m9qu/
+
+# Curriculum
+
+

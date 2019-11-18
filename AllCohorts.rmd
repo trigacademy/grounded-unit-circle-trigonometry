@@ -11,9 +11,9 @@ output:
     code_folding: hide
     
 ---
-This group of 101 students is made up 5 cohorts who completed our materials between fall of 2016 and spring of 2018. These cohorts include: 14 community college students from fall 2016, 25 high school students from fall 2016, 19 high school students from summer 2017, 4 high school students from fall 2017, and 39 community college students from fall 2017 - spring 2018. The data from these cohorts can be combined because all 5 cohorts completed the same materials (with the exception of a few minor changes that have been documented in the paper) within similar time frames. All cohorts except the 39 community college students from fall 2017 - spring 2018 completed an immediate intervention study with no comparison group. Combining the data from all cohorts allows us to look at questions that don't depend on the immediate vs. delayed intervention framework with a higher degree of power. 
+This group of 101 students is made up 5 cohorts who completed our materials between fall of 2016 and spring of 2018. These cohorts include: 14 community college students from fall 2016, 25 high school students from fall 2016, 19 high school students from summer 2017, 4 high school students from fall 2017, and 39 community college students from fall 2017 - spring 2018. The data from these cohorts can be combined because all 5 cohorts completed the same materials (with the exception of a few minor changes that will be documented in the manuscript currently in preparation) within similar time frames. All cohorts except the 39 community college students from fall 2017 - spring 2018 completed an immediate intervention study with no comparison group. Combining the data from all cohorts allows us to look at questions that don't depend on the immediate vs. delayed intervention framework with a higher degree of power. 
 
-The code in the following analyses uses the following data frames: pretest.rds, lesson.rds, posttestAll.rds. The raw data can be downloaded from the "Raw Data" tab, and the process used to get the raw data into the pretest.rds, lesson.rds, posttestAll.rds format can be found in the "Data Process" tab. 
+The code in the following analyses uses the following data frames: pretest.rds, lesson.rds, posttestAll.rds. The raw data can be downloaded from the "Materials" tab, and the process used to get the raw data into the pretest.rds, lesson.rds, posttestAll.rds format can be found in the "Data Process" tab. 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -21,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Which TI problems were most difficult?
 
-We looked at the pattern of performance on each of the 20 types of trigonometric identity problems, broken down into 3 groups - bottom, middle, top - based on performance on TI1.
+We looked at the pattern of performance on each of the 20 types of trigonometric identity problems, broken down into 3 groups - bottom, middle, top - based on performance on TI1. 
 ```{r,message=FALSE,fig.width=12,fig.height=7,warning=FALSE}
 library(ggplot2)
 library(dplyr)
@@ -231,48 +231,21 @@ ggplot(all,aes(delta,acc,fill=rule))+
   theme(panel.grid.minor=element_blank(), panel.grid.major=element_blank(), strip.background=element_blank())+scale_y_continuous(limits=c(0,1),labels = c(0,25,50,75,100))
 
 
+```
+
+The following graph presents the same results with the error responses broken down by whether the participant chose the alternative with the correct function but wrong signum, the incorrect function but correct signum, or neither the correct function nor signum. 
+```{r,message=FALSE,fig.width=12,fig.height=7,warning=FALSE}
 ggplot(all,aes(delta,ErrorCount,fill=ErrorType))+
   geom_bar(stat="identity")+
   facet_grid(third~signfunc)+theme_bw(20)+
   labs(x='Shift Δ',y='Count',fill='Error Type') 
-
 ```
 
 
-# How does TI performance relate to SM score? 
-```{r,message=FALSE,warning=FALSE}
-
-library(lme4)
-library(dplyr)
-
-##39 analysis
-posttestResults <- readRDS("posttestAll.rds")
-#posttestResults <- readRDS("posttest39.rds")
-#posttestResults1 <- posttestResults[posttestResults$group=="LE" & posttestResults$test=="TI1", ]
-#posttestResults2 <- posttestResults[posttestResults$group=="LL" & posttestResults$test=="TI2", ]
-#posttestResults3 <- rbind(posttestResults1,posttestResults2)
-posttestResults<- posttestResults %>% group_by(user) %>% summarise(TrigID = mean(correct)*100)
-
-pretestData <- readRDS("pretest.rds")
-
-sm <- pretestData %>%
-  select("user", "MarkXYII", "MarkThetaII", "Right Triangle Trig III", "Right Triangle Trig V")
-sm$sm <- rowMeans(sm[,2:5])
-
-postSM <- merge(posttestResults,sm,by="user")
-
-lmPostSM = lm(TrigID ~ sm, data=postSM)
-
-plot(TrigID ~ sm, data=postSM,main="SM Score v. Trig ID Posttest")
-abline(lm(TrigID ~ sm, data=postSM))
-summary(lmPostSM)
-```
-
-
-# Can SM score predict within-lesson performance?
+# Which lesson problems are most difficult?
 
 ```{r,message=FALSE,warning=FALSE}
-
+###find most frequently missed problems
 
 lessonData <- readRDS("lesson.rds")
 userIDs <- read.csv("combinedUserIDs.csv")
@@ -306,75 +279,7 @@ ch56Data <- lessonData [ lessonData$page_id %in% ch56,]
     ch56Data %>%
     group_by(user) %>%
     summarise(PercentCorrect = round(mean(firstCorrect)*100,1))
-    
-posttestData <- readRDS("posttestAll.rds")
-pretestData <- readRDS("pretest.rds")
-
-sm <- pretestData %>%
-  select("user", "MarkXYII", "MarkThetaII", "Right Triangle Trig III", "Right Triangle Trig V")
-sm$sm <- rowMeans(sm[,2:5])
-
-
-allData <- merge(lessonDataAverageAll,sm,by="user")
-ch14DataSum <- merge(lessonDataAverageCh14,sm, by="user")
-ch56DataSum <- merge(lessonDataAverageCh56,sm, by="user")
-
-##predict lesson performance with sm score
-
-lm1 = lm(PercentCorrect ~ sm, data=allData)
-lm2 = lm(PercentCorrect ~ sm, data=ch14DataSum)
-lm3 = lm(PercentCorrect ~ sm, data=ch56DataSum)
-
-plot(PercentCorrect ~ sm, data=ch14DataSum,main="SM Score v. Ch 1-4 Performance")
-abline(lm(PercentCorrect ~ sm, data=ch14DataSum,main="Ch 1-4"))
-summary(lm2)
-
-plot(PercentCorrect ~ sm, data=ch56DataSum, main="SM Score v. Ch 5-6 Performance")
-abline(lm(PercentCorrect ~ sm, data=ch56DataSum, main="Ch 5-6"))
-summary(lm3)
-
-
-```
-
-# Can lesson performance predict posttest performance? 
-
-```{r,message=FALSE,warning=FALSE}
-#####predict posttest results from lesson performance
-# posttest <- readRDS("posttest39.rds")
-# 
-# posttestGroupA <- posttest[posttest$group=="LE" & posttest$test=="TI1",]
-# posttestGroupA <- posttestGroupA %>% group_by(user) %>% summarise(TrigID = mean(correct)*100)
-# 
-# posttestGroupB <- posttest[posttest$group=="LL" & posttest$test=="TI2",]
-# posttestGroupB <- posttestGroupB %>% group_by(user) %>% summarise(TrigID = mean(correct)*100)
-# 
-# posttestResults <- rbind(posttestGroupA,posttestGroupB)
-
-posttestResults <- readRDS("posttestAll.rds")
-posttestResults<- posttestResults %>% group_by(user) %>% summarise(TrigID = mean(correct)*100)
-
-ch14DataSum <- merge(lessonDataAverageCh14,posttestResults,by="user")
-ch56DataSum <- merge(lessonDataAverageCh56,posttestResults,by="user")
-allDataSum <- merge(lessonDataAverageAll,posttestResults,by="user")
-names(ch14DataSum)[2] <- "PercentCorrectCh14"
-names(ch56DataSum)[2] <- "PercentCorrectCh56"
-
-lm5 = lm(TrigID ~ PercentCorrectCh14, data=ch14DataSum)
-plot(TrigID ~ PercentCorrectCh14, data=ch14DataSum,main="Ch1-4 Lesson Performance v Posttest")
-abline(lm(TrigID ~ PercentCorrectCh14, data=ch14DataSum))
-summary(lm5)
-
-lm6 = lm(TrigID ~ PercentCorrectCh56, data=ch56DataSum)
-plot(TrigID ~ PercentCorrectCh56, data=ch56DataSum,main="Ch5-6 Lesson Performance v Posttest")
-abline(lm(TrigID ~ PercentCorrectCh56, data=ch56DataSum))
-summary(lm6)
-
-```
-
-# Which lesson problems are most difficult?
-
-```{r,message=FALSE,warning=FALSE}
-###find most frequently missed problems
+  
 LessonDataByProblem <-
   lessonData %>%
   group_by(order) %>%
@@ -395,7 +300,7 @@ kable(mostMissedProblems) %>%
 
 
 # What are the patterns of performance for the most frequently missed problems?
-
+Below we show the accuracy results for the problems listed above broken down by the bottom, middle, and top thirds of the group as measured by TI1 performance. 
 ```{r,message=FALSE,warning=FALSE,fig.width=12,fig.height=8}
 
 lessthan60Data <- lessonData [ lessonData$order %in% lessthan60,]

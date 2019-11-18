@@ -15,7 +15,7 @@ output:
 <br>
 <br>
 
-Click on the "code" button beside each hashtag to see the code used to transform the raw data into the data objects that are used in the analyses on the "Comparison Study Cohort", "Early Cohorts", and "All Cohorts" pages of this website. The raw data can be downloaded from the "Raw Data" tab. 
+Click on the "code" button beside each hashtag to see the code used to transform the raw data into the data objects that are used in the analyses on the "Comparison Study Cohort", "Early Cohorts", and "All Cohorts" pages of this website. The raw data can be downloaded from the "Materials" tab. 
 
 # #pretest.rds
 
