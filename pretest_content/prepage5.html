@@ -1,0 +1,252 @@
+{% extends "ucexp/pre.html" %}
+{% load static from staticfiles %}
+
+	{% block styles %}
+	{{ block.super }}
+	<!-- prereqs styles -->
+	<style>
+	.jspsych-same-different-stimulus {
+		font-size: 300%;
+		padding-bottom: 1em;
+	}
+	#jspsych-survey-textline-next {
+		margin-top: 1em;
+	}
+	</style>
+	{% endblock %}
+
+{% block title %}{{ page_id }}{% endblock %}
+
+{% block body %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/pre/{{ next_page }}/?userid={{user_string}}" style="display:none"></a>
+      <div class="progress trialProgress">
+  <div class="progress-bar" id="trialProgress" style="width: 0%;"></div>
+</div>
+<div id="jspsych_display" class="center-content"><i class="fa fa-spinner fa-pulse fa-5x"></i></div>
+
+
+{% endblock %}
+
+	{% block scripts %}
+	{{ block.super }}
+	<!-- prereqs scripts -->
+	<script src="{% static 'js/jspsych-survey-textline.js' %}"></script>
+	<script src="{% static 'js/jspsych-same-different.js' %}"></script>
+	  <script>
+
+    /* define test block */
+
+	var factors = {
+    	losign: ['+','-'],
+			hisign: ['+','-'],
+    	order: [1,2],
+			random: [1,2,3]
+		}
+
+
+	var all_trials = jsPsych.randomization.factorial(factors, 1, false);
+	// balanced vs totally random
+	all_trials.forEach(function(el,i){
+		/*if (el.delta > 0) {
+			el.delta = el.delta * [1,-1].random();
+		}*/
+		//el.order = random(1,2);
+	});
+	        var pairs = [];
+	        var stimuli = [];
+	        var answers = [];
+
+					var textminus = '–';
+
+		// have catch trial for same
+		var hipool = $.grep($.map(Array(29), function(el,i){ return i+1; }).slice(11-1,29+1),function(e,i){return e %5 === 0 ? false : true});
+		var lopool = $.grep($.map(Array(69), function(el,i){ return i+1; }).slice(31-1,69+1),function(e,i){return e%5 === 0 ? false : true});
+		for (var i = 0; i < all_trials.length; i++) {
+			all_trials[i].lonum = lopool.random();
+			if (all_trials[i].losign === '-') {
+				all_trials[i].lonum = textminus+all_trials[i].lonum;
+			}
+			// do i need to use emdash instead of hyphen????
+		all_trials[i].hinum = hipool.random();
+		if (all_trials[i].hisign === '-') {
+			all_trials[i].hinum = textminus+all_trials[i].hinum;
+		}
+		stimuli[i] = '';
+		if (all_trials[i].order === 1) {
+
+			stimuli[i] += all_trials[i].lonum;
+			stimuli[i] += (all_trials[i].hinum >= 0) ? '+' : '';
+			stimuli[i] += all_trials[i].hinum;
+		} else {
+			stimuli[i] += all_trials[i].hinum;
+			stimuli[i] += (all_trials[i].losign === '+') ? '+' : '';
+			stimuli[i] += all_trials[i].lonum;
+		}
+	}
+/*
+[Large + Small]
+63+14    77
+38+24 c 62
+48+17 c 65
+[Small + Large]
+16+37 c 53
+19+69 c 88
+21+58    79
+[Large – Small]
+64–18 b 46
+53–13     40
+36–24    12
+[Small – Large]
+21–61    -40
+11–54    -43
+29–47 b -18
+[–Large + Small]
+–67+26    -41
+–49+16    -33
+–31+28 b -3
+[–Small + Large]
+–23+68   45
+–14+56   42
+–29+43 b14
+[–Large – Small]
+–66–18 c -84
+–52–12    -64
+–34–27 c -61
+[–Small – Large]
+–22–62    -84
+–17–51    -68
+–26–39 c -63
+[Large – (–Small)]
+44 – (–12)    56
+[Small – (–Large)]
+19 – (–46)  c   65
+[–(–Large) + Small]
+–(–32) + 13    45
+[–(–Small) + Large]
+–(–27) + 57  c   84
+[–(Large – Small)]
+–(59 – 22)      –37
+[–(Small – Large)]
+–(11 – 41)     30
+[–(–Large + Small)]
+–(–42 + 23) b   19
+[–(–Small + Large)]
+–(–28 + 33) b   –5
+*/
+var stimuli = [
+"63+14",
+"38+24",
+"48+17",
+"16+37",
+"19+69",
+"21+58",
+"64-18",
+"53-13",
+"36-24",
+"21-61",
+"11-54",
+"29-47",
+"-67+26",
+"-49+16",
+"-31+28",
+"-23+68",
+"-14+56",
+"-29+43",
+"-66-18",
+"-52-12",
+"-34-27",
+"-22-62",
+"-17-51",
+"-26-39",
+"44-(-12)",
+"19-(-46)",
+"-(-32)+13",
+"-(-27)+57",
+"-(59-22)",
+"-(11-41)",
+"-(-42+23)",
+"-(-28+33)"];
+stimuli = shuffle(stimuli);
+stimuli = stimuli.map(function(e,i){return [e]});
+
+	var debug = false;
+
+	// previously i had subjects click to continue on inter-trial page, but some didn't like it, and i'm not sure if it helped at all
+    var post_trial_gap = function() {
+    	if (debug===true) {
+    		return 50;
+    	} else {
+    	return 50;
+      // return Math.floor( Math.random() * 1500 ) + 750;
+      }
+    }
+
+	var prompt_mapping = random(1,2);
+
+// press the "+(prompt_mapping == 1 ? "Q key if they have the same value or P if different." : "P key if they have the same value or Q if different.")+" (D
+
+    var instructions_block = {
+      type: "text",
+      text: "<p>In this part of the study, you will see a simple expression, and your task is to enter the resulting value.  Once you have entered a value, you may click submit or you may simply use the enter key.</p>"+
+			    "<p>As a reminder, please do not use a calculator or the internet to help you answer questions in this study. </p>" +
+          "<p>For each problem, take as much time as you think is necessary, but don’t spend any more time than you need. Press any key to continue.</p>",
+      //timing_post_trial: 0
+    };
+
+    /*var test_block = {
+      type: "same-different",
+      stimuli: pairs,
+      answer: answers,
+			same_key: "Y",
+			different_key: "N",
+      first_prompt: "Press the SPACE bar when ready to continue.",
+      prompt: "Is this number the correct result?  Press Y if it is the correct result. Press N if it is not.",
+      timing_first_stim: -1,
+      timing_second_stim: -1,
+      is_html: true
+    };*/
+
+
+		var test_block = {
+			type: 'survey-textline',
+			preamble: $.map(stimuli,function(val,i){return 'Enter the resulting value:';}),
+			questions: $.map(stimuli,function(val,i){return [[val[0].replace(/-/g,'–')]];}),
+			data: stimuli
+		}
+
+    /* define debrief block */
+
+
+    var debrief_block = {
+      type: "text",
+      text: function() {
+        return "<p> Thank you for completing this part of the study. Press any key to continue.</p>";
+      }
+    };
+
+    /* create experiment definition array */
+    var experiment = [];
+    experiment.push(instructions_block);
+    experiment.push(test_block);
+		Array.prototype.push.apply(experiment, survey_chunks);
+    experiment.push(debrief_block);
+
+    /* start the experiment */
+
+    jsPsych.init({
+      experiment_structure: experiment,
+      display_element: $('#jspsych_display'),
+			on_trial_finish: function() {
+				var progress = jsPsych.progress();
+				$('#trialProgress').css('width',progress.current_trial_global/progress.total_trials*100+'%');
+			},
+      on_finish: function(data) {
+				create_post(data);
+        //jsPsych.data.displayData();
+        //$("html").addClass("wait");
+		//window.location = $("#next_url").attr('href');
+      }
+    });
+  </script>
+
+	{% endblock %}

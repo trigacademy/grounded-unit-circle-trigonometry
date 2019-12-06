@@ -1,0 +1,206 @@
+{% extends "ucexp/pre.html" %}
+{% load static from staticfiles %}
+
+	{% block styles %}
+	{{ block.super }}
+	<!-- mrt styles -->
+{% endblock %}
+
+{% block title %}{{ page_id }}{% endblock %}
+
+{% block body %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/pre/{{ next_page }}/?userid={{user_string}}" style="display:none"></a>
+      <!--<div class="progress trialProgress">
+  <div class="progress-bar" id="trialProgress" style="width: 0%;"></div>
+</div>-->
+<div id="jspsych_display" class="center-content"><i class="fa fa-spinner fa-pulse fa-5x"></i></div>
+
+{% endblock %}
+
+	{% block scripts %}
+	{{ block.super }}
+	<!-- MRT scripts -->
+	<script src="{% static 'js/jspsych-same-different.js' %}"></script>
+	<script src="{% static 'js/jspsych-single-stim.js' %}"></script>
+	<script src="{% static 'js/jspsych-call-function.js' %}"></script>
+	  <script>
+// testing local commit
+// $.map(Array(8), function(el,i){ return i+1; })
+
+
+
+    /* define test block */
+	var test_shapes = [1,2,3,4,5,6,7,8,9,10];
+	// $.map(Array(16), function(el,i){ return i+1; })
+	var factors = {
+    	shape: test_shapes,
+    	mirror: ['a','b'],
+    	rotatation: [0]
+	}
+
+
+	var all_trials = jsPsych.randomization.factorial(factors, 1, false);
+	// balanced vs totally random
+	var rotations = $.map(Array(8), function(el2,j){ return j*45 + 15; });
+	rotations = rotations.concat(rotations,rotations,rotations);
+	rotations = shuffle(rotations);
+	all_trials.forEach(function(el,i){
+		el.rotation = rotations[i];
+	});
+		var n_trials = 20; //re-write from above variables
+	        var pairs = [];
+	        var stimuli = [];
+					var stimuli_html = [];
+        var stimdata = [];
+
+		// have catch trial for same
+
+        for (var i = 0; i < n_trials; i++) {
+            // randomly choose the first stim we will show to subject
+            var first_obj = random(1,test_shapes.length); // re-write this
+            var first_mirror = random(2)===1 ? 'a' : 'b';
+            var first_rotate = random(0,7)*45+15;
+            // randomly choose whether this trial will be "same" or "different"
+            if (random(2) === 0) {
+                // same trial
+
+                // add the matching pair to the pairs list
+                pairs.push(["{{ STATIC_URL }}img/z/"+first_obj+"_z_"+first_rotate+"_"+first_mirror+".jpg", "{{ STATIC_URL }}img/z/"+first_obj+"_z_"+rotations[i]+"_"+first_mirror+".jpg"]);
+								stimuli_html.push("<img width='400px' src='"+pairs[pairs.length-1][0]+"' /><img class='pull-right' width='400px' src='"+pairs[pairs.length-1][1]+"' />");
+                // add the answer to the answers list
+                stimdata.push({answer:"same"});
+            }
+            else {
+                // different trial
+				if (random(2) === 0) {
+					var second_obj = random(1,test_shapes.length);
+					while (second_obj == first_obj) {
+                    	second_obj = random(1,test_shapes.length);
+                	}
+                	var second_mirror = random(2)===1 ? 'a' : 'b';
+				} else {
+					var second_obj = first_obj;
+					var second_mirror = first_mirror === 'a' ? 'b' : 'a';
+				}
+
+                // add the pair
+                pairs.push(["{{ STATIC_URL }}img/z/"+first_obj+"_z_"+first_rotate+"_"+first_mirror+".jpg", "{{ STATIC_URL }}img/z/"+second_obj+"_z_"+rotations[i]+"_"+second_mirror+".jpg"]);
+
+								stimuli_html.push("<img width='400px' src='"+pairs[pairs.length-1][0]+"' /><img class='pull-right' width='400px' src='"+pairs[pairs.length-1][1]+"' />");
+                // add the answer
+								stimdata.push({answer:"different"});
+            }
+            //console.log(pairs[pairs.length-1]);
+        }
+
+	pairs.forEach(function(el,i){
+		stimuli.push(pairs[i][0]);
+		stimuli.push(pairs[i][1]);
+	});
+	stimuli = $.unique(stimuli);
+
+	var debug = false;
+  var same_key = 'Y';
+	var different_key = 'N';
+	// previously i had subjects click to continue on inter-trial page, but some didn't like it, and i'm not sure if it helped at all
+    var post_trial_gap = function() {
+    	if (debug===true) {
+    		return 50;
+    	} else {
+    	return 50;
+      // return Math.floor( Math.random() * 1500 ) + 750;
+      }
+    }
+
+	var prompt_mapping = random(1,2);
+
+    var instructions_block = {
+      type: "text",
+      text: "<p>In this task, you will see images of two 3D blocks, and your task is to decide whether they are the same object or different objects. You should quickly press the "+same_key+" key if the objects were the same or the "+different_key+" key if they were different. (Don't worry - these instructions for your response will be on screen as needed.)</p>"+
+          "<p>Try to answer as quickly and accurately as possible. If you're not sure, just make your best guess.  Press any key to continue.</p>",
+      timing_post_trial: 0
+    };
+		/*var time_block = {
+    type: 'call-function',
+    func: function(){ return (new Date()).getTime();}
+	}*/
+
+		var timeLimit = 2 * 60 * 1000;
+
+		var example_block = {
+      type: "text",
+      text: ["<p>An example is shown below. You will see two objects. In this case, the objects are different. When the objects are different, you should press the "+different_key+" key. Press the "+different_key+" key now.</p><div><img width='400px' src='{{ STATIC_URL }}img/z/11_z_240_a.jpg' /><img width='400px' class='pull-right' src='{{ STATIC_URL }}img/z/13_z_240_a.jpg' /></div>"+
+      "Press the "+same_key+" key if yes, the objects are the same. Press the "+different_key+" key if no, they are different.",["<p>In this example, the two objects are the same (even though they are rotated to different positions). In this case, you should press the "+same_key+" key to indicate the objects are the same. Press the "+same_key+" now to begin this portion of the study.</p><div><img width='400px' src='{{ STATIC_URL }}img/z/11_z_240_a.jpg' /><img width='400px' class='pull-right' src='{{ STATIC_URL }}img/z/11_z_15_a.jpg' /></div>"+
+      "Press the "+same_key+" key if yes, the objects are the same. Press the "+different_key+" key if no, they are different."]],
+      cont_key: ['y','n'],
+      timing_post_trial: 0
+    };
+
+    /*var example_feedback_block = {
+      type: "text",
+      text: "<p>Try to answer as quickly and accurately as possible. Press any key to continue.</p>",
+      timing_post_trial: 0
+    };*/
+
+    var test_block = {
+      type: "single-stim",
+      stimuli: stimuli_html,
+			is_html: true,
+			choices: [same_key, different_key],
+      prompt: "Are these two pictures of the same object? <br /> Press the "+same_key+" key if yes, the objects are the same. Press the "+different_key+" key if no, they are different.",
+      timing_stim: -1,
+			data: stimdata,
+			on_finish: function(trial_data) {
+				var response = (String.fromCharCode(trial_data.key_press) === same_key) ? 'same' : 'different';
+        var correct = trial_data.answer === response;
+        jsPsych.data.addDataToLastTrial({response: response, correct: correct});
+				/*var firstTrial = jsPsych.data.getTrialsFromChunk(jsPsych.currentChunkID())[0];
+				var startTime = firstTrial.time_elapsed - firstTrial.rt;
+    		if ((jsPsych.totalTime()-startTime) > timeLimit) {
+					jsPsych.endCurrentChunk();
+				}*/
+  		}
+    };
+
+    // can i preload while instructions are displayed? probably?
+	jsPsych.preloadImages(stimuli,start);
+
+    /* define debrief block */
+
+var debrief_block = {
+	type: "text",
+	text: function() {
+		return "<p> Thank you for completing this part of the post-lesson. Press any key to continue.</p>";
+	}
+};
+
+    /* create experiment definition array */
+    var experiment = [];
+    experiment.push(instructions_block);
+		experiment.push(example_block);
+		//experiment.push(example_feedback_block);
+    experiment.push({
+			chunk_type: 'linear',
+			timeline: [test_block]
+		});
+		Array.prototype.push.apply(experiment, survey_chunks);
+    experiment.push(debrief_block);
+
+    /* start the experiment */
+    function start() {
+    jsPsych.init({
+      experiment_structure: experiment,
+      display_element: $('#jspsych_display'),
+      on_finish: function(data) {
+
+				create_post(data);
+        //jsPsych.data.displayData();
+
+        //$("html").addClass("wait");
+		//window.location = $("#next_url").attr('href');
+      }
+    });
+    }
+  </script>
+
+	{% endblock %}

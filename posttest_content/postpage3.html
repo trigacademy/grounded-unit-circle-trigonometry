@@ -1,0 +1,174 @@
+{% extends "ucexp/pre.html" %}
+{% load static from staticfiles %}
+
+	{% block styles %}
+	{{ block.super }}
+	<style>
+	.jspsych-same-different-stimulus {
+		font-size: 300%;
+		padding-bottom: 1em;
+	}
+	#jspsych-survey-textline-next {
+		margin-top: 1em;
+	}
+	</style>
+	{% endblock %}
+
+{% block title %}{{ page_id }}{% endblock %}
+
+{% block body %}
+{% if stage_is_survey %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/survey/{{ next_page }}/?userid={{user_string}}" style="display:none">TEXT HERE</a>
+{% elif phase == 'post' %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/post/{{ next_page }}/?userid={{user_string}}" style="display:none"></a>
+{% elif phase == 'post2' %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/post2/{{ next_page }}/?userid={{user_string}}" style="display:none"></a>
+{% endif %}
+
+      <div class="progress trialProgress">
+  <div class="progress-bar" id="trialProgress" style="width: 0%;"></div>
+</div>
+<div id="jspsych_display" class="center-content"><i class="fa fa-spinner fa-pulse fa-5x"></i></div>
+
+
+{% endblock %}
+
+	{% block scripts %}
+	{{ block.super }}
+	<!-- triangle scripts -->
+	<script src="{% static 'js/jspsych-survey-textline.js' %}"></script>
+	<script src="{% static 'js/jspsych-shape.js' %}"></script>
+	  <script>
+
+// $.map(Array(8), function(el,i){ return i+1; })
+
+
+    /* define test block */
+
+	var factors = {
+    	xsign: ['+','-'],
+    	delta: [-18,-9,0,9,18],
+    	order: [1],
+    	answer: ['same','different']
+	}
+
+
+	var all_trials = jsPsych.randomization.factorial(factors, 1, false);
+	// balanced vs totally random
+	all_trials.forEach(function(el,i){
+		/*if (el.delta > 0) {
+			el.delta = el.delta * [1,-1].random();
+		}*/
+		el.order = random(1,2);
+	});
+	        var pairs = [];
+	        var stimuli = [];
+	        var answers = [];
+
+		// have catch trial for same
+
+		for (var i = 0; i < all_trials.length; i++) {
+		all_trials[i].theta = random(1,8);
+		stimuli[i] = '';
+		if (all_trials[i].order === 1) {
+			if (all_trials[i].xsign === '-') {
+				stimuli[i] += '-';
+			}
+			stimuli[i] += all_trials[i].theta;
+			stimuli[i] += (all_trials[i].delta >= 0) ? '+' : '-';
+			stimuli[i] += Math.abs(all_trials[i].delta);
+		} else {
+			if (all_trials[i].delta < 0) {
+				stimuli[i] += '-';
+			}
+			stimuli[i] += Math.abs(all_trials[i].delta);
+			stimuli[i] += (all_trials[i].xsign === '+') ? '+' : '-';
+			stimuli[i] += all_trials[i].theta;
+		}
+		if (all_trials[i].answer === 'same') {
+		all_trials[i].offset = 0;
+		} else {
+		all_trials[i].offset = [-2,-1,1,2].random();
+		}
+		pairs.push([stimuli[i],(eval(stimuli[i])+all_trials[i].offset)]);
+		answers.push(all_trials[i].answer);
+	}
+
+	var debug = false;
+
+	// previously i had subjects click to continue on inter-trial page, but some didn't like it, and i'm not sure if it helped at all
+    var post_trial_gap = function() {
+    	if (debug===true) {
+    		return 50;
+    	} else {
+    	return 50;
+      // return Math.floor( Math.random() * 1500 ) + 750;
+      }
+    }
+
+	var prompt_mapping = random(1,2);
+
+    var instructions_block = {
+      type: "text",
+      text: "<p>For the next few questions, you will see triangles and you will be asked questions related to their properties.</p>"+
+          "<p>For each problem, take as much time as you think is necessary, but don’t spend any more time than you need. Answers in the form of fractions are allowed. Press any key to continue.</p>",
+      timing_post_trial: 0
+    };
+
+		var qs = [['What is the length of the leg opposite angle A?','What is the length of the leg adjacent to angle A?','What is the length of the hypotenuse?','Now consider angle B. What is the length of the leg opposite angle B?']];
+
+		qs.push(['What is the sine of angle A?','What is the cosine of angle A?','Now consider angle B. What is the sine of angle B?']);
+
+		qs.push(['What is the tangent of angle A?','What is the secant of angle A?','What is the tangent of angle B?','What is the secant of angle B?']);
+
+		qs.push(['What is the tangent of angle A?','What is the secant of angle A?','What is the tangent of angle B?','What is the secant of angle B?']);
+
+		var i345 = "<p>Note: Answers in the form of fractions are allowed.</p><img width='200px' src=\"{% static 'img/triangle345.png' %}\" />";
+
+		var cheatsheet = '<p>Now we will be asking questions similar to those you just answered. We provide additional information to make sure all students are aware of the conventions these questions rely on. If you are uncertain about these conventions you may be able to improve your score by reading this information. <p>tangent = opposite / adjacent</p><p>secant = hypotenuse / adjacent</p>';
+
+		var test_block = {
+			type: 'survey-textline',
+			preamble: [i345,i345,i345,cheatsheet+i345],
+			questions: qs,
+		}
+
+
+    /* define debrief block */
+
+
+    var debrief_block = {
+      type: "text",
+      text: function() {
+        return "<p> Thank you for completing this part of the study. Press any key to continue.</p>";
+      }
+    };
+
+
+    /* create experiment definition array */
+    var experiment = [];
+    experiment.push(instructions_block);
+    experiment.push(test_block);
+		Array.prototype.push.apply(experiment);
+		experiment.push(debrief_block);
+
+
+    /* start the experiment */
+
+    jsPsych.init({
+      experiment_structure: experiment,
+      display_element: $('#jspsych_display'),
+			on_trial_finish: function() {
+				var progress = jsPsych.progress();
+				$('#trialProgress').css('width',progress.current_trial_global/progress.total_trials*100+'%');
+			},
+      on_finish: function(data) {
+				create_post(data);
+        //jsPsych.data.displayData();
+        //$("html").addClass("wait");
+		//window.location = $("#next_url").attr('href');
+      }
+    });
+  </script>
+
+	{% endblock %}

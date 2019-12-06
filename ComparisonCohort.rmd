@@ -18,7 +18,9 @@ Participants in group LE completed a set of lesson materials prior to TI1, while
 
 As part of the AMSA, students completed four basic math tasks with written support: marking X-Y coordinate pairs, marking angles, answering basic questions about trigonometric ratios on a right triangle, and approximating values of sine and cosine on the unit circle. We refer to the numerical average of these tasks as students' Supported Math (SM) score. Based on results from participants who completed our learning materials and trig identities test prior to the current experiment, we set a screening threshold of 50.0% correct on the SM score.
 
-The code in the following analyses uses the following data frames: pretest.rds and and posttest39.rds. The raw data can be downloaded from the "Materials" tab, and the process used to get the raw data into the pretest.rds and posttest39.rds format can be found in the "Data Process" tab. The analyses below were pre-registered with the OSF (https://osf.io/px72k/).
+The code in the following analyses uses the following data frames: pretest.rds and and posttest39.rds. The raw data can be downloaded from the "Materials" tab, and the process used to get the raw data into the pretest.rds and posttest39.rds format can be found in the "Data Process" tab. 
+
+The graphs below summarize some of the analyses that were preregistered with the OSF (https://osf.io/px72k/). The remaining analyses that we pregistered will appear in a paper currently in preparation for publication. 
 
 # 1. Did the lesson-early group perform better in the first within study trig identities test than the lesson-late group?
 

@@ -1,0 +1,328 @@
+{% extends "ucexp/pre.html" %}
+{% load static from staticfiles %}
+
+	{% block styles %}
+	{{ block.super }}
+	<!-- trig styles -->
+	{% endblock %}
+
+{% block title %}{{ page_id }}{% endblock %}
+
+{% block body %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/post/{{ next_page }}/?userid={{user_string}}" style="display:none"></a>
+      <div class="progress trialProgress">
+  <div class="progress-bar" id="trialProgress" style="width: 0%;"></div>
+</div>
+<div id="jspsych_display" class="center-content"><i class="fa fa-spinner fa-pulse fa-5x"></i></div>
+
+
+{% endblock %}
+
+	{% block scripts %}
+	{{ block.super }}
+	<!-- trig scripts -->
+	<script src="{% static 'js/jspsych-multi-choice.js' %}"></script>
+
+		<script>
+
+
+		var instructions_block = {
+			type: "text",
+			text: "<p>In this part of the study, you will see a trigonometry expression at the top of the page.  Your task is to choose the equivalent expression from four possible choices. This time, you will not have a diagram to reference. Do not use a calculator or the internet during this session. Use of pen/pencil and paper is encouraged. Note that the numbers in the expressions are all given in degrees.</p>"+
+					"<p>Press any key to continue.</p>",
+			timing_post_trial: 0
+		};
+
+
+		$.get('/dj/ucexp/api/trigID/{{ user.id }}/?format=json')
+		.done(function(data) {
+			part2_trials = JSON.parse(data.data);
+
+		console.log(part2_trials);
+
+	var theta = [];
+	var stimuli = [];
+	var choices = [];
+	var choicefuncs = ['sin','–sin','cos','–cos'];
+	var textminus = '–';
+	for (var i = 0; i < part2_trials.length; i++) {
+		part2_trials[i].theta = random(1,8)*10;
+		stimuli[i] = part2_trials[i].func + '(';
+		if (part2_trials[i].order === 1) {
+			if (part2_trials[i].xsign === '-') {
+				stimuli[i] += textminus;
+			}
+			stimuli[i] += part2_trials[i].theta;
+			stimuli[i] += (part2_trials[i].delta >= 0) ? '°+' : '°'+textminus;
+			stimuli[i] += Math.abs(part2_trials[i].delta) + '°)';
+		} else {
+			if (part2_trials[i].delta < 0) {
+				stimuli[i] += textminus;
+			}
+			stimuli[i] += Math.abs(part2_trials[i].delta);
+			stimuli[i] += (part2_trials[i].xsign === '+') ? '°+' : '°'+textminus;
+			stimuli[i] += part2_trials[i].theta + '°)';
+		}
+
+		choices[i] = [];
+		for (var j = 0; j < 4; j++) {
+			choices[i][j] = choicefuncs[j] + '(' + part2_trials[i].theta + '°)';
+		}
+	}
+
+	var debug = false;
+
+	// previously i had subjects click to continue on inter-trial page, but some didn't like it, and i'm not sure if it helped at all
+		var post_trial_gap = function() {
+			if (debug===true) {
+				return 50;
+			} else {
+			return 50;
+			// return Math.floor( Math.random() * 1500 ) + 750;
+			}
+		}
+
+		var test_block = {
+			type: "multi-choice",
+			prompt:'Choose the expression that is equivalent to',
+			stimuli: stimuli,
+			is_html: true,
+			choices: choices,
+			data: part2_trials,
+			timing_response: debug ? 50 : -1,
+			timing_post_trial: post_trial_gap
+		};
+
+
+		var confess_likert = {
+		type: "multi-choice",
+		prompt: '',
+		stimuli: ['How often did you use a calculator, the internet, paper and pencil, or other resources to help you answer questions (across all parts of this session)?  There is no penalty if you did -- your response helps us better understand your performance.'],
+		is_html: true,
+		choices: [['Never','Rarely','Sometimes','Often','Always']],
+		timing_response: debug ? 50 : -1,
+		timing_post_trial: 300,
+		on_finish: function() {
+		 if (jsPsych.data.getLastTrialData().response === 1) {
+			 jsPsych.endCurrentChunk();
+		 }
+	 }
+	};
+
+	var confess_open = {
+		type: 'survey-textarea',
+		questions: [['What resources did you use, and during which parts of this study?']],
+		timing_post_trial: 500,
+};
+	var confession_chunk = {
+		chunk_type: 'linear',
+	 timeline: [confess_likert,confess_open]
+ };
+		/* define debrief block */
+
+		function getAverageResponseTime() {
+
+			var trials = jsPsych.data.getTrialsOfType('multi-choice');
+
+			var sum_rt = 0;
+			var valid_trial_count = 0;
+			for (var i = 0; i < trials.length; i++) {
+				if (trials[i].response == 'go' && trials[i].rt > -1) {
+					sum_rt += trials[i].rt;
+					valid_trial_count++;
+				}
+			}
+			return Math.floor(sum_rt / valid_trial_count);
+		}
+
+
+		var debrief_block = {
+			type: "text",
+			text: function() {
+				return "<p> Thank you for completing this part of the study. Press any key to continue.</p>";
+			}
+		};
+
+
+				var firstopen_qs = ["Thank you! You answered 40 questions.  How many do you think you answered correctly?","Describe in detail how you solved these problems.  Include whether you visualized anything (and if so, what you visualized), and what rules, mnemonics or other strategies you used."];
+
+				var firstsurvey_block = {
+					type: 'survey-textarea',
+					questions: [firstopen_qs],
+					timing_post_trial: 500,
+			};
+
+				var firstlikert_qs = ["How often did you recall an explicit rule or formula?","How often did you visualize the sine or cosine functions graphed as waves?","How often did you visualize sine and cosine as x and y coordinates of a circle?","How often did you visualize a right triangle with sine and cosine associated with sides of the triangle?","How often did you use a mnemonic (memorized acronym or phrase) to help you remember facts about sine and cosine?","How often did you use another representation or strategy?"];
+				var lastopen_qs = ["Describe the other representation(s) or strategy you used.  If you responded never, simply type 'never'."];
+
+				var scale_likely = ["Never", "Rarely", "Sometimes", "Often", "Always"];
+
+				var firstlikert_block = {
+					type: 'survey-likert',
+					questions: [firstlikert_qs],
+					labels: [[scale_likely,scale_likely,scale_likely,scale_likely,scale_likely,scale_likely]],
+					intervals: [[5,5,5,5,5,5]],
+					timing_post_trial: 300,
+			};
+
+				var lastsurvey_block = {
+					type: 'survey-textarea',
+					questions: [[lastopen_qs[0]]],
+					timing_post_trial: 500,
+			};
+
+			var q_1 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>I would be good at seeing how several parts should be put together to make a piece of furniture like a chair.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_2 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>I am good at understanding statements that describe spatial relationships.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_3 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>I find diagrams helpful when I try to understand mathematical relationships.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_4 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>I am good at math.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_5 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>It is important to me that I do well in math.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_6 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>Some people are naturally better at math than others.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_7 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>The effort we put into learning math is more important than our innate abilities.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_8 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>People who are good at math are those who understand new math ideas really quickly.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_9 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>To do well in math it is important to take your time and think carefully.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+
+			var q_10 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>When I do math, I look for formulas I can plug numbers into without thinking too much about the specific context or meaning of the problem.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_11 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>Math is a subject of patterns that describe the world more than a subject of calculations and rules.</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+			var q_12 = {
+				type: "multi-choice",
+				prompt: "<p>Please rate how much you agree or disagree with the following statement.</p>",
+				stimuli: ['<p>I see math more as "exciting" than "intimidating."</p>'],
+				is_html: true,
+				choices: [["Strongly disagree", "Disagree", "Somewhat disagree", "Neither agree or disagree", "Somewhat agree", "Agree", "Strongly agree"]],
+				timing_post_trial: 50,
+			};
+
+
+		/* create experiment definition array */
+		var experiment = [];
+		experiment.push(instructions_block);
+		experiment.push({
+			chunk_type: 'linear',
+		 timeline: [test_block]
+		});
+		experiment.push(confession_chunk);
+		experiment.push(firstsurvey_block);
+		experiment.push(firstlikert_block);
+		experiment.push(lastsurvey_block);
+		experiment.push(q_1);
+		experiment.push(q_2);
+		experiment.push(q_3);
+		experiment.push(q_4);
+		experiment.push(q_5);
+		experiment.push(q_6);
+		experiment.push(q_7);
+		experiment.push(q_8);
+		experiment.push(q_9);
+		experiment.push(q_10);
+		experiment.push(q_11);
+		experiment.push(q_12);
+		Array.prototype.push.apply(experiment);
+		experiment.push(debrief_block);
+
+		/* start the experiment */
+		jsPsych.init({
+			experiment_structure: experiment,
+			display_element: $('#jspsych_display'),
+			on_trial_finish: function() {
+				var progress = jsPsych.progress();
+				$('#trialProgress').css('width',progress.current_trial_global/progress.total_trials*100+'%');
+			},
+			on_finish: function(data) {
+				//jsPsych.data.displayData();
+				create_post(data);
+				//$("html").addClass("wait");
+		//window.location = $("#next_url").attr('href');
+			}
+		});
+		});
+	</script>
+
+	{% endblock %}

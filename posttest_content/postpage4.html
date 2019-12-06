@@ -1,0 +1,299 @@
+{% extends "ucexp/pre.html" %}
+{% load static from staticfiles %}
+
+	{% block styles %}
+	{{ block.super }}
+	<!-- prepage styles -->
+	<style>
+	/*.mainrow {
+		width: 818px;
+		margin: 0 auto;
+		visibility: hidden;
+	}*/
+
+	/*.lessontextcontainer {
+		width: 404px;
+	}*/
+	.svgcontainer {
+    margin: auto !IMPORTANT;
+		float: none !IMPORTANT;
+	}
+
+	</style>
+	{% endblock %}
+
+{% block title %}{{ page.title }}{% endblock %}
+{% block body %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/post/{{ next_page }}/?userid={{user_string}}" style="display:none"></a>
+      <div class="progress">
+  <div class="progress-bar" id="practiceProgress" style="width: 0%;"></div>
+</div>
+<div id="jspsych_display" class="center-content"><i class="fa fa-spinner fa-pulse fa-5x"></i></div>
+    <!-- <div class="row mainrow">
+
+        <ol id="lessonlines"> -->
+<!-- <li>
+</li> -->
+<!-- <li>Extra hidden potential!!</li> -->
+        </ol>
+        <div class="svgcontainer notask freeplay circle posonly polar circlelabels colorx colory rangefrom-720 rangeto720 bothticks" ><svg class="lesson noselect" id="lessonsvg"></svg>
+        	<!-- <div class="response">
+        	<div id="feedback-msg"></div>
+        		<form id="lesson-submit" action='' method='get'>
+        			<div class="input-group">
+        				<input type="text" class="form-control lesson-text" placeholder="Type answer..." autocomplete="off" style="background-image: none; background-position: 0% 0%; background-repeat: repeat;">
+        				<span class="input-group-btn"> -->
+        				<!-- <button class="btn btn-primary lesson-submit" type="submit">Submit</button> -->
+        				</span>
+        			</div>
+        		</form>
+        	</div>
+        </div>
+				<div class="lessontext">
+        <div class="lessontextcontainer">
+        <ul>
+{{ page.text|safe}}
+</ul>
+{% if DEBUG %}
+<div class="debug">
+<h3><button class="debug"><span class="glyphicon glyphicon-refresh"></span></button> Debug Mode:</h3>
+<strong>Notes:</strong> <span class="text-muted">{{ page.notes }}</span>
+<pre class="debug"></pre>
+</div>
+{% endif %}
+        </div>
+        <div class="practiceContainer">
+        <div class="practiceInstruct"></div>
+        </div>
+</div>
+</div>
+{% endblock %}
+
+	{% block scripts %}
+	{{ block.super }}
+	<!-- prepage scripts -->
+	<script src="{% static 'js/custom.js' %}"></script>
+	<script src="{% static 'js/jspsych-call-function.js' %}"></script>
+	<script src="{% static 'js/jspsych-html.js' %}"></script>
+	<script src="{% static 'js/jspsych-multi-choice.js' %}"></script>
+
+	<script>
+
+
+	var instructions_block = {
+		type: "text",
+		text: "<p>In this part of the study, you will see a trigonometry expression. Your task is to choose the equivalent expression from four possible choices.  Feel free to use the diagram on the bottom of the page to help you answer the questions (an example diagram is shown below). Do not use a calculator or the internet during this session. Use of pen/pencil and paper is encouraged. Note that the numbers in the expressions are all given in degrees.</p>"+
+				"<p>Press any key to continue.</p>",
+		timing_post_trial: 0
+	};
+
+
+	var lessonstart_block = {
+		type: "call-function",
+		  func: function(){
+				$('.mainrow').css('visibility','visible');
+				$('.mainrow').show();
+				showNextChunk();
+				// doesn't work
+				/*if ($("button.lesson-submit").text()=='Continue') {
+					$('.practiceInstruct').text('Click button to continue.');
+				}*/
+			}
+	};
+	var lesson_block = {
+		type: "html",
+		prompt:'Choose the expression that is equivalent to',
+		stimuli: stimuli,
+		is_html: true,
+		choices: choices,
+		data: part1_trials,
+		timing_response: debug ? 50 : -1,
+		pages: [{url:'{% static "empty.html" %}',cont_btn: "lesson-submit", check_fn: function(display_element){
+			console.log('jspsych check');
+			if ($("button.lesson-submit").text() === "Continue") {
+				console.log('jspsych continue');
+				if ($('.lessontext>ul>li.hide.teach').length > 0) {
+					console.log('jspsych 1');
+					return false;
+				} else if ($('.lessontext>ul>li.practice').length > 0 && trials.length < criterion) {
+					console.log('jspsych 2');
+					return false;
+				} else {
+					console.log('jsPsych done');
+					return true;
+				}
+			} else {
+				return false;
+			}
+		}}],
+		on_finish: function(trial_data) {
+			jsPsych.data.addDataToLastTrial({trials: trials, comment: $('#comment').val()});
+			$('.mainrow').hide();
+			$('.progress').hide();
+		}
+	};
+	var debrief_block = {
+		type: "text",
+		text: function() {
+			return "<p> Thank you for completing this part of the session. Press any key to continue.</p>";
+		}
+	};
+
+	/* define test block */
+
+var factors = {
+		func: ['sin', 'cos'],
+		xsign: ['+','-'],
+		delta: [-180,-90,0,90,180]
+}
+
+
+
+//create 20-level array
+var order1_trials = jsPsych.randomization.factorial(factors, 1, false);
+console.log(order1_trials);
+//duplicate 20-level array (so they are in the same order)
+var order2_trials = $.extend(true, {}, order1_trials );
+console.log(order2_trials);
+//push order into arrays
+for(var i=0; i < order1_trials.length; i++) {
+	order1_trials[i].order = 1;
+	order2_trials[i].order = 2;
+}
+
+//generate array of positions to pull from order1 and order2
+var trialArray = new Array(20);
+for(var i=0;i<trialArray.length;i++) {
+	trialArray[i] = i;
+}
+
+//shuffle array
+function shuffle(a) {
+    var j, x, i;
+    for (i = a.length; i; i--) {
+        j = Math.floor(Math.random() * i);
+        x = a[i - 1];
+        a[i - 1] = a[j];
+        a[j] = x;
+    }
+}
+
+shuffle(trialArray);
+console.log(trialArray);
+//pull first 10 from order 1 and last 10 from order 2 for first page
+var part1_trials = Array(20);
+for (var i = 0; i<10; i++) {
+		index = trialArray.slice(0,10)[i];
+    part1_trials[i] = order1_trials[index];
+}
+
+for (var i = 0; i<10; i++) {
+		index = trialArray.slice(10,20)[i];
+    part1_trials[i+10] = order2_trials[index];
+}
+
+console.log(part1_trials);
+
+shuffle(part1_trials);
+//pull last 10 from order 1 and first 10 from order  2 for second page
+var part2_trials = Array(20);
+for (var i = 0; i<10; i++) {
+		index = trialArray.slice(0,10)[i];
+    part2_trials[i] = order2_trials[index];
+}
+
+for (var i = 0; i<10; i++) {
+		index = trialArray.slice(10,20)[i];
+    part2_trials[i+10] = order1_trials[index];
+}
+
+shuffle(part2_trials);
+
+console.log(part1_trials);
+console.log(part2_trials);
+
+$.post('{{ BASE_URL }}/ucexp/api/trigID/', {
+                    user: {{ user.id }},
+										data: JSON.stringify(part2_trials)
+                });
+
+var theta = [];
+var stimuli = [];
+var choices = [];
+var choicefuncs = ['sin','–sin','cos','–cos'];
+var textminus = '–';
+for (var i = 0; i < part1_trials.length; i++) {
+	part1_trials[i].theta = random(1,8)*10;
+	stimuli[i] = part1_trials[i].func + '(';
+	if (part1_trials[i].order === 1) {
+		if (part1_trials[i].xsign === '-') {
+			stimuli[i] += textminus;
+		}
+		stimuli[i] += part1_trials[i].theta;
+		stimuli[i] += (part1_trials[i].delta >= 0) ? '°+' : '°'+textminus;
+		stimuli[i] += Math.abs(part1_trials[i].delta) + '°)';
+	} else {
+		if (part1_trials[i].delta < 0) {
+			stimuli[i] += textminus;
+		}
+		stimuli[i] += Math.abs(part1_trials[i].delta);
+		stimuli[i] += (part1_trials[i].xsign === '+') ? '°+' : '°'+textminus;
+		stimuli[i] += part1_trials[i].theta + '°)';
+	}
+
+	choices[i] = [];
+	for (var j = 0; j < 4; j++) {
+		choices[i][j] = choicefuncs[j] + '(' + part1_trials[i].theta + '°)';
+	}
+}
+
+var post_trial_gap = function() {
+	if (debug===true) {
+		return 50;
+	} else {
+	return 50;
+	// return Math.floor( Math.random() * 1500 ) + 750;
+	}
+}
+
+
+var test_block = {
+	type: "multi-choice",
+	prompt:['Choose the expression that is equivalent to'],
+	stimuli: stimuli,
+	is_html: true,
+	choices: choices,
+	data: part1_trials,
+	timing_response: debug ? 50 : -1,
+	timing_post_trial: post_trial_gap,
+	on_finish: function(trial_data) {
+		jsPsych.data.addDataToLastTrial({events:events});
+		events = [];
+	}
+};
+
+
+
+	    /* create experiment definition array */
+	    var experiment = [];
+	    experiment.push(instructions_block);
+			experiment.push(lessonstart_block);
+			experiment.push(test_block);
+			Array.prototype.push.apply(experiment);
+	    // experiment.push(debrief_block);
+
+	    /* start the experiment */
+	    jsPsych.init({
+	      experiment_structure: experiment,
+	      display_element: $('#jspsych_display'),
+				on_trial_start: function() {
+					start_time = (new Date()).getTime();
+				},
+	      on_finish: function(data) {
+
+					create_post(data);
+
+	      }
+	    });
+			</script>
+	{% endblock %}

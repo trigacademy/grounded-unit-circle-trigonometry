@@ -1,0 +1,197 @@
+{% extends "ucexp/pre.html" %}
+{% load static from staticfiles %}
+
+	{% block styles %}
+	{{ block.super }}
+	<!-- trig styles -->
+	{% endblock %}
+
+{% block title %}{{ page_id }}{% endblock %}
+
+{% block body %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/pre/{{ next_page }}/?userid={{user_string}}" style="display:none"></a>
+      <div class="progress trialProgress">
+  <div class="progress-bar" id="trialProgress" style="width: 0%;"></div>
+</div>
+<div id="jspsych_display" class="center-content"><i class="fa fa-spinner fa-pulse fa-5x"></i></div>
+
+
+{% endblock %}
+
+	{% block scripts %}
+	{{ block.super }}
+	<!-- trig scripts -->
+	<script src="{% static 'js/jspsych-multi-choice.js' %}"></script>
+	<script src="{% static 'js/jspsych-survey-textline.js' %}"></script>
+	  <script>
+
+    /* define welcome message block */
+    var welcome_block = {
+      type: "text",
+      text: "<p>Nice work! Now we’ll move on to some more trigonometry questions. Some of the questions may seem tough.  You should try hard, even though we will not link your score to your identity -- we are only interested in how well our lesson helps all of the students who try it.</p><p>As a reminder, we do not expect any prior knowledge -- simply try to choose the best answer. (It is okay to guess between choices if you cannot pick one.)</p>"+
+          "<p>Press any key to continue.</p>",
+      timing_post_trial: 0
+    };
+
+    var instructions_block = {
+      type: "text",
+      text: "<p>In this part of the study, you will see a trigonometry expression at the top of the page.  Your task is to choose the equivalent expression from four possible choices.  Note that the numbers in the expressions are all given in degrees.</p>"+
+          "<p>Press any key to continue.</p>",
+      timing_post_trial: 0
+    };
+
+
+    /* define test block */
+
+	var factors = {
+    	func: ['sin', 'cos'],
+    	xsign: ['+','-'],
+    	delta: [0,90,180],
+    	order: [1]
+	}
+
+
+	var all_trials = jsPsych.randomization.factorial(factors, 1, false);
+	// balanced
+	all_trials.forEach(function(el,i){
+		if (el.delta > 0) {
+			el.delta = el.delta * [1,-1].random();
+		}
+		el.order = random(1,2);
+	});
+	// totally random
+
+	var theta = [];
+	var stimuli = [];
+	var choices = [];
+	var choicefuncs = ['sin','–sin','cos','–cos'];
+	var textminus = '–';
+	for (var i = 0; i < all_trials.length; i++) {
+		all_trials[i].theta = random(1,8)*10;
+		stimuli[i] = all_trials[i].func + '(';
+		if (all_trials[i].order === 1) {
+			if (all_trials[i].xsign === '-') {
+				stimuli[i] += textminus;
+			}
+			stimuli[i] += all_trials[i].theta;
+			stimuli[i] += (all_trials[i].delta >= 0) ? '°+' : '°'+textminus;
+			stimuli[i] += Math.abs(all_trials[i].delta) + '°)';
+		} else {
+			if (all_trials[i].delta < 0) {
+				stimuli[i] += textminus;
+			}
+			stimuli[i] += Math.abs(all_trials[i].delta);
+			stimuli[i] += (all_trials[i].xsign === '+') ? '°+' : '°'+textminus;
+			stimuli[i] += all_trials[i].theta + '°)';
+		}
+
+		choices[i] = [];
+		for (var j = 0; j < 4; j++) {
+			choices[i][j] = choicefuncs[j] + '(' + all_trials[i].theta + '°)';
+		}
+	}
+
+	var debug = false;
+
+	// previously i had subjects click to continue on inter-trial page, but some didn't like it, and i'm not sure if it helped at all
+    var post_trial_gap = function() {
+    	if (debug===true) {
+    		return 50;
+    	} else {
+    	return 50;
+      // return Math.floor( Math.random() * 1500 ) + 750;
+      }
+    }
+
+    var test_block = {
+      type: "multi-choice",
+			prompt:'Choose the expression that is equivalent to',
+      stimuli: stimuli,
+      is_html: true,
+      choices: choices,
+      data: all_trials,
+      timing_response: debug ? 50 : -1,
+      timing_post_trial: post_trial_gap
+    };
+
+
+		var email_block = {
+			type: 'survey-textline',
+			preamble: [["We are interested in your participation in potential follow-up sessions, involving a beginner lesson in trigonometry.  Because these sessions may exceed your REP credit requirement, we are offering payment via Amazon gift cards."]],
+			questions: [['If you are interested in participating in future sessions, please enter your email address.  If you do not want to participate, simply leave this field blank and click submit.']],
+			required: [[false]]
+		}
+
+		var confess_likert = {
+		type: "multi-choice",
+		prompt: '',
+		stimuli: ['How often did you use a calculator, the internet, paper and pencil, or other resources to help you answer questions (across all parts of this study)?  There is no penalty if you did -- your response helps us better understand your performance.'],
+		is_html: true,
+		choices: [['Never','Rarely','Sometimes','Often','Always']],
+		timing_response: debug ? 50 : -1,
+		timing_post_trial: 300,
+		on_finish: function() {
+		 if (jsPsych.data.getLastTrialData().response === 1) {
+			 jsPsych.endCurrentChunk();
+		 }
+	 }
+	};
+
+	var confess_open = {
+		type: 'survey-textarea',
+		questions: [['What resources did you use, and during which parts of this study?']],
+		timing_post_trial: 500,
+};
+	var confession_chunk = {
+		chunk_type: 'linear',
+	 timeline: [confess_likert,confess_open]
+ };
+
+    /* define debrief block */
+
+    function getAverageResponseTime() {
+
+      var trials = jsPsych.data.getTrialsOfType('multi-choice');
+
+      var sum_rt = 0;
+      var valid_trial_count = 0;
+      for (var i = 0; i < trials.length; i++) {
+        if (trials[i].response == 'go' && trials[i].rt > -1) {
+          sum_rt += trials[i].rt;
+          valid_trial_count++;
+        }
+      }
+      return Math.floor(sum_rt / valid_trial_count);
+    }
+
+
+
+    /* create experiment definition array */
+    var experiment = [];
+    experiment.push(welcome_block);
+    experiment.push(instructions_block);
+    experiment.push(test_block);
+		Array.prototype.push.apply(experiment, survey_chunks);
+		{% if user.userprofile.pool == 'rep' %}
+		experiment.push(email_block);
+		{% endif %}
+		experiment.push(confession_chunk);
+
+    /* start the experiment */
+    jsPsych.init({
+      experiment_structure: experiment,
+      display_element: $('#jspsych_display'),
+			on_trial_finish: function() {
+				var progress = jsPsych.progress();
+				$('#trialProgress').css('width',progress.current_trial_global/progress.total_trials*100+'%');
+			},
+      on_finish: function(data) {
+        //jsPsych.data.displayData();
+				create_post(data);
+        //$("html").addClass("wait");
+		//window.location = $("#next_url").attr('href');
+      }
+    });
+  </script>
+
+	{% endblock %}

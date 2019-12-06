@@ -1,0 +1,196 @@
+{% extends "ucexp/pre.html" %}
+{% load static from staticfiles %}
+
+	{% block styles %}
+	{{ block.super }}
+	<style>
+	.jspsych-same-different-stimulus {
+		font-size: 300%;
+		padding-bottom: 1em;
+	}
+	#jspsych-survey-textline-next {
+		margin-top: 1em;
+	}
+	</style>
+	{% endblock %}
+
+{% block title %}{{ page_id }}{% endblock %}
+
+{% block body %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/pre/{{ next_page }}/?userid={{user_string}}" style="display:none"></a>
+      <div class="progress trialProgress">
+  <div class="progress-bar" id="trialProgress" style="width: 0%;"></div>
+</div>
+<div id="jspsych_display" class="center-content"><i class="fa fa-spinner fa-pulse fa-5x"></i></div>
+
+
+{% endblock %}
+
+	{% block scripts %}
+	{{ block.super }}
+	<!-- triangle scripts -->
+	<script src="{% static 'js/jspsych-survey-textline.js' %}"></script>
+	<script src="{% static 'js/jspsych-shape.js' %}"></script>
+	  <script>
+
+// $.map(Array(8), function(el,i){ return i+1; })
+
+
+    /* define test block */
+
+	var factors = {
+    	xsign: ['+','-'],
+    	delta: [-18,-9,0,9,18],
+    	order: [1],
+    	answer: ['same','different']
+	}
+
+
+	var all_trials = jsPsych.randomization.factorial(factors, 1, false);
+	// balanced vs totally random
+	all_trials.forEach(function(el,i){
+		/*if (el.delta > 0) {
+			el.delta = el.delta * [1,-1].random();
+		}*/
+		el.order = random(1,2);
+	});
+	        var pairs = [];
+	        var stimuli = [];
+	        var answers = [];
+
+		// have catch trial for same
+
+		for (var i = 0; i < all_trials.length; i++) {
+		all_trials[i].theta = random(1,8);
+		stimuli[i] = '';
+		if (all_trials[i].order === 1) {
+			if (all_trials[i].xsign === '-') {
+				stimuli[i] += '-';
+			}
+			stimuli[i] += all_trials[i].theta;
+			stimuli[i] += (all_trials[i].delta >= 0) ? '+' : '-';
+			stimuli[i] += Math.abs(all_trials[i].delta);
+		} else {
+			if (all_trials[i].delta < 0) {
+				stimuli[i] += '-';
+			}
+			stimuli[i] += Math.abs(all_trials[i].delta);
+			stimuli[i] += (all_trials[i].xsign === '+') ? '+' : '-';
+			stimuli[i] += all_trials[i].theta;
+		}
+		if (all_trials[i].answer === 'same') {
+		all_trials[i].offset = 0;
+		} else {
+		all_trials[i].offset = [-2,-1,1,2].random();
+		}
+		pairs.push([stimuli[i],(eval(stimuli[i])+all_trials[i].offset)]);
+		answers.push(all_trials[i].answer);
+	}
+
+	var debug = false;
+
+	// previously i had subjects click to continue on inter-trial page, but some didn't like it, and i'm not sure if it helped at all
+    var post_trial_gap = function() {
+    	if (debug===true) {
+    		return 50;
+    	} else {
+    	return 50;
+      // return Math.floor( Math.random() * 1500 ) + 750;
+      }
+    }
+
+	var prompt_mapping = random(1,2);
+
+    var instructions_block = {
+      type: "text",
+      text: "<p>In this part of the study, you will see various triangles, and you will be asked questions related to their properties.</p>"+
+          "<p>For each problem, take as much time as you think is necessary, but don’t spend any more time than you need. Note that for this pre-lesson session, we do not expect any prior knowledge -- simply try to give the best answer. (It is okay to guess if you are not sure.) Answers in the form of fractions are allowed. Press any key to continue.</p>",
+      timing_post_trial: 0
+    };
+/*
+    var test_block = {
+      type: "shape",
+      stimuli: [{sides:[3,4,5],rotation:0,base:'leg'}],
+			questions: ['sin'],
+    };
+		*/
+
+		var qs = [['What is the sine of angle A?','What is the cosine of angle A?','What is the tangent of angle A?','Now consider angle B. What is the sine of angle B?']];
+
+		qs.push(['What is the length of the leg opposite angle A?','What is the length of the leg adjacent to angle A?','What is the length of the hypotenuse?','Now consider angle B. What is the length of the leg opposite angle B?']);
+
+		qs.push(['What is the sine of angle A?','What is the cosine of angle A?','What is the tangent of angle A?','Now consider angle B. What is the sine of angle B?']);
+
+		qs.push(["The diagram above shows a point on a circle of radius 1 with a radial line from the center of the circle to the point. The point is associated with the value of θ = 30°. What is the approximate value of the sine of θ? Please answer in decimal form.", "What is the approximate value of the cosine of θ? Please answer in decimal form."]);
+
+		qs.push(["The diagram above shows another point on a circle of radius 1 with a radial line from the center of the circle to the point. The point is associated with the value of θ = -60°. What is the approximate value of the sine of θ? Please answer in decimal form.", "What is the approximate value of the cosine of θ? Please answer in decimal form."]);
+
+		qs.push(["The diagram above shows another point on a circle of radius 1 with a radial line from the center of the circle to the point. The point is associated with the value of θ = 240°. What is the approximate value of the sine of θ? Please answer in decimal form.", "What is the approximate value of the cosine of θ? Please answer in decimal form."]);
+
+		qs.push(["A student moved a point around a circle in the positive direction, proceeding for a total of 390° from the point θ = 0°, which is illustrated on the diagram above.  What value of θ between 0° and 360° corresponds to the same position where the point ended up after the rotation?", "What is the approximate value of the sine of θ? Please answer in decimal form.", "What is the approximate value of the cosine of θ? Please answer in decimal form."]);
+
+		qs.push(["The diagram above shows a point on a circle of radius 1 with a radial line from the center of the circle to the point. The point is associated with the value of θ = 30°. What is the approximate value of the sine of θ? Please answer in decimal form.", "What is the approximate value of the cosine of θ? Please answer in decimal form."]);
+
+		qs.push(["The diagram above shows another point on a circle of radius 1 with a radial line from the center of the circle to the point. The point is associated with the value of θ = -60°. What is the approximate value of the sine of θ? Please answer in decimal form.", "What is the approximate value of the cosine of θ? Please answer in decimal form."]);
+
+		qs.push(["The diagram above shows another point on a circle of radius 1 with a radial line from the center of the circle to the point. The point is associated with the value of θ = 240°. What is the approximate value of the sine of θ? Please answer in decimal form.", "What is the approximate value of the cosine of θ? Please answer in decimal form."]);
+
+		qs.push(["A student moved a point around a circle in the positive direction, proceeding for a total of 390° from the point θ = 0°, which is illustrated on the diagram above.  What value of θ between 0 and 360° corresponds to the same position where the point ended up after the rotation?", "What is the approximate value of the sine of θ? Please answer in decimal form.", "What is the approximate value of the cosine of θ? Please answer in decimal form."]);
+
+		var cheatsheet = '<p>Now we will be asking questions similar to those you just answered. We provide additional information to make sure all students are aware of the conventions these questions rely on. If you are uncertain about these conventions you may be able to improve your score by reading this information.</p><p>sine = opposite / hypotenuse</p><p>cosine = adjacent / hypotenuse</p><p>tangent = opposite / adjacent</p>';
+
+		var i345 = "<p>Note: Answers in the form of fractions are allowed.</p><img width='200px' src=\"{% static 'img/triangle345.png' %}\" />";
+		var i6810 = "<p>Note: Answers in the form of fractions are allowed.</p><img width='200px' src=\"{% static 'img/triangle6810.png' %}\" />";
+
+		var t30 = "<img width='400px' src=\"{% static 'img/theta30.png' %}\" />";
+		var tm60 = "<img width='400px' src=\"{% static 'img/thetam60.png' %}\" />";
+		var t240 = "<img width='400px' src=\"{% static 'img/theta240.png' %}\" />";
+		var t390 = "<img width='400px' src=\"{% static 'img/theta390.png' %}\" />";
+
+		var cheatsheet2 = '<p>Now we will be asking questions similar to those you just answered. We provide additional information to make sure all students are aware of the conventions these questions rely on. If you are uncertain about these conventions you may be able to improve your score by reading this information.</p><p>On a circle with radius 1 (called the unit circle), points on the circle can be represented by the variable θ in degrees.</p><p>The sine of the value of θ associated with a position is the y-coordinate of that position.</p><p>The cosine of the value of θ associated with a position is the x-coordinate of that position.</p><p>A position reached after a rotation of an amount θ greater than 360° is the same as the position reached after a rotation of θ – 360°.</p>'
+
+		var test_block = {
+			type: 'survey-textline',
+			preamble: [i345,i6810,cheatsheet+i6810,t30,tm60,t240,t390,cheatsheet2+t30,cheatsheet2+tm60,cheatsheet2+t240,cheatsheet2+t390],
+			questions: qs,
+		}
+
+
+    /* define debrief block */
+
+
+    var debrief_block = {
+      type: "text",
+      text: function() {
+        return "<p> Thank you for completing this part of the study. Press any key to continue.</p>";
+      }
+    };
+
+
+    /* create experiment definition array */
+    var experiment = [];
+    experiment.push(instructions_block);
+    experiment.push(test_block);
+		Array.prototype.push.apply(experiment, survey_chunks);
+		experiment.push(debrief_block);
+
+
+    /* start the experiment */
+
+    jsPsych.init({
+      experiment_structure: experiment,
+      display_element: $('#jspsych_display'),
+			on_trial_finish: function() {
+				var progress = jsPsych.progress();
+				$('#trialProgress').css('width',progress.current_trial_global/progress.total_trials*100+'%');
+			},
+      on_finish: function(data) {
+				create_post(data);
+        //jsPsych.data.displayData();
+        //$("html").addClass("wait");
+		//window.location = $("#next_url").attr('href');
+      }
+    });
+  </script>
+
+	{% endblock %}

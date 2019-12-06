@@ -1,0 +1,166 @@
+{% extends "ucexp/pre.html" %}
+{% load static from staticfiles %}
+
+	{% block styles %}
+	{{ block.super }}
+	<!-- hft styles -->
+	{% endblock %}
+
+{% block title %}{{ page_id }}{% endblock %}
+
+{% block body %}
+<a id="next_url" href="{{ BASE_URL }}/ucexp/pre/{{ next_page }}/?userid={{user_string}}" style="display:none"></a>
+      <!--<div class="progress trialProgress">
+  <div class="progress-bar" id="trialProgress" style="width: 0%;"></div>
+</div>-->
+<div id="jspsych_display" class="center-content"><i class="fa fa-spinner fa-pulse fa-5x"></i></div>
+
+
+{% endblock %}
+
+	{% block scripts %}
+	{{ block.super }}
+	<!-- HFT scripts -->
+	<script src="{% static 'js/jspsych-single-stim.js' %}"></script>
+	  <script>
+
+    /* define test block */
+
+	var factors = {
+		page: [1, 2],
+    	complex: $.map(Array(10), function(el,i){ return i+1; }),
+    	simple: ['a']
+	}
+
+
+	var all_trials = jsPsych.randomization.factorial(factors, 1, false);
+	var n_trials = all_trials.length;
+
+	var choices = ['a','b'];
+	var correct_ans = [1,1,0,1,1,0,0,0,1,1,0,0,1,1,1,1,0,0,1,0];
+	var correct_seq = $.map(Array(n_trials), function(el,i){ return i+1; });
+	correct_seq = shuffle(correct_seq);
+	var pairs = [];
+	var stimuli = [];
+	var stimuli_html = [];
+	all_trials.forEach(function(el,i){
+		el.shown_correct = correct_seq[i] > (n_trials / 2);
+		el.simple = choices[Number(el.shown_correct)*correct_ans[el.complex-1]];
+
+		complex_img = "{{ STATIC_URL }}img/hft/"+el.page+"_"+el.complex+".png";
+		simple_img = "{{ STATIC_URL }}img/hft/"+el.page+"_"+el.simple+".png";
+		pairs.push([complex_img, simple_img]);
+		stimuli_html.push("<img src='"+simple_img+"' /><br /><br /><img src='"+complex_img+"' />");
+	});
+
+	pairs.forEach(function(el,i){
+		stimuli.push(pairs[i][0]);
+		stimuli.push(pairs[i][1]);
+	});
+	stimuli = $.unique(stimuli);
+
+	var debug = false;
+
+	// previously i had subjects click to continue on inter-trial page, but some didn't like it, and i'm not sure if it helped at all
+    var post_trial_gap = function() {
+    	if (debug===true) {
+    		return 50;
+    	} else {
+    	return 50;
+      // return Math.floor( Math.random() * 1500 ) + 750;
+      }
+    }
+
+	var prompt_mapping = random(1,2);
+
+
+// press the "+(prompt_mapping == 1 ? "Q key if the simple figure appears within the complex figure or P if it does not." : "P key if the simple figure appears within the complex figure or Q if it does not.")+" (Don't
+	var instructions_block = {
+      type: "text",
+      text: "<p>Nice work! Let's go through another of our mental exercises, as warm-ups for different abilities that might help you later.</p>"+
+      "<p>In this part of the study, you will see a simple figure and a larger complex figure. Your task is to decide whether the simple figure is hidden somewhere within the complex figure.</p>"+
+      "<p>You will press the Y key if the simple figure appears within the complex figure or N if it does not. (Don't worry - these instructions for your response will be on screen as needed.)</p>"+
+          "<p>Try to answer as quickly and accurately as possible.  Press any key to see an example.</p>",
+      timing_post_trial: 0
+    };
+
+    var example_block = {
+      type: "text",
+      text: "<p>An example is given below. You will see a simple figure, and a complex figure below it.</p><img class='hft-example simple' src='{{ STATIC_URL }}img/hft/example2_simple.png' /><br /><br /><img class='hft-example complex' src='{{ STATIC_URL }}img/hft/example2_complex.png' />"+
+      "<p>Press the Y key if the simple figure appears within the complex figure or N if it does not</p>",
+      cont_key: ['y','n'],
+      timing_post_trial: 0
+    };
+
+    var example_feedback_block = {
+      type: "text",
+      text: "<p>In this example, the simple figure was hidden in the complex figure, as shown below.</p><img class='hft-example simple' src='{{ STATIC_URL }}img/hft/example2_simple.png' /><br /><br /><img class='hft-example complex' src='{{ STATIC_URL }}img/hft/example2_shown.png' />"+
+      "<p>Some figures will be more complex than this example, but try your best.  If the simple figure is hidden in the complex figure, you should be able to trace the simple figure along existing lines of the complex figure. The simple figures are always of the same size as shown, and in the same orientation as shown; that is, they are not turned around at different angles.</p><p>Try to answer as quickly and accurately as possible. Press any key to continue.</p>",
+      timing_post_trial: 0
+    };
+
+	/*$('img.hft-example.complex').mouseenter(function(){
+	$(this).attr('src','{{ STATIC_URL }}img/hft/example_shown.png');
+	}).mouseleave(function(){
+	$(this).attr('src','{{ STATIC_URL }}img/hft/example_complex.png');
+});*/
+
+	var timeLimit = 5 * 60 * 1000;
+
+    var test_block = {
+      type: "single-stim",
+      stimuli: stimuli_html,
+      is_html: true,
+      choices: ['Y','N'],
+      prompt: "Does the simple figure appear within the complex figure? Press Y if yes, the simple figure appears within the complex figure. Press N if it does not.",
+      timing_stim: -1,
+			on_finish: function() {
+				/*var firstTrial = jsPsych.data.getTrialsFromChunk(jsPsych.currentChunkID())[0];
+				var startTime = firstTrial.time_elapsed - firstTrial.rt;
+				if ((jsPsych.totalTime()-startTime) > timeLimit) {
+					jsPsych.endCurrentChunk();
+				}*/
+			}
+    };
+
+    // can i preload while instructions are displayed? probably?
+	jsPsych.preloadImages(stimuli,start);
+
+    /* define debrief block */
+
+
+    var debrief_block = {
+      type: "text",
+      text: function() {
+        return "<p> Thank you for completing this part of the warm-ups. Press any key to continue.</p>";
+      }
+    };
+
+    /* create experiment definition array */
+    var experiment = [];
+    experiment.push(instructions_block);
+    experiment.push(example_block);
+    experiment.push(example_feedback_block);
+    experiment.push({
+			chunk_type: 'linear',
+			timeline: [test_block]
+		});
+		Array.prototype.push.apply(experiment, survey_chunks);
+    experiment.push(debrief_block);
+
+    /* start the experiment */
+    function start() {
+    jsPsych.init({
+      experiment_structure: experiment,
+      display_element: $('#jspsych_display'),
+      on_finish: function(data) {
+        //jsPsych.data.displayData();
+				create_post(data);
+        //$("html").addClass("wait");
+		//window.location = $("#next_url").attr('href');
+      }
+    });
+    }
+  </script>
+
+	{% endblock %}
