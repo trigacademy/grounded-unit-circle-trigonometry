@@ -31,10 +31,10 @@ If the lesson enhanced student performance, we would expect a positive effect of
 We conducted the above analysis twice, once without consideration of problem type, and once with problem type as a random factor. The first of these analyses is a simple assessment of the effect of the lesson materials, but results may include variability due to problem type that clouds assessment of the effect of the lesson. With problem type as a random factor, we will allow the intercept, lesson timing, SM score and their interaction to vary across problem type. By fitting these parameters, we may be able to remove the problem type variance and enhance the clarity of our assessment of the lesson effect. A consistent effect regardless of the inclusion of problem type as a random factor would indicate robustness of the effect.
 
 ```{r,message=FALSE,warning=FALSE}
-library(ggplot2)
-library(dplyr)
-library(data.table)
-library(tidyr)
+library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(tidyr) #v 1.0.0
 
 pretestData <- readRDS("pretest.rds")
 

@@ -1734,10 +1734,10 @@ div.tocify {
 <p>To assess this, we used a logistic mixed model to predict TI1 score for all participants, using lesson timing (LE group vs LL group), SM score, and their interaction. We included a random intercept for each subject.</p>
 <p>If the lesson enhanced student performance, we would expect a positive effect of lesson timing, where the LE group tends to achieve higher accuracy than the LL group.</p>
 <p>We conducted the above analysis twice, once without consideration of problem type, and once with problem type as a random factor. The first of these analyses is a simple assessment of the effect of the lesson materials, but results may include variability due to problem type that clouds assessment of the effect of the lesson. With problem type as a random factor, we will allow the intercept, lesson timing, SM score and their interaction to vary across problem type. By fitting these parameters, we may be able to remove the problem type variance and enhance the clarity of our assessment of the lesson effect. A consistent effect regardless of the inclusion of problem type as a random factor would indicate robustness of the effect.</p>
-<pre class="r"><code>library(ggplot2)
-library(dplyr)
-library(data.table)
-library(tidyr)
+<pre class="r"><code>library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(tidyr) #v 1.0.0
 
 pretestData &lt;- readRDS(&quot;pretest.rds&quot;)
 

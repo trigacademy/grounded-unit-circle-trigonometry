@@ -23,13 +23,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 We looked at the pattern of performance on each of the 20 types of trigonometric identity problems, broken down into 3 groups - bottom, middle, top - based on performance on TI1. 
 ```{r,message=FALSE,fig.width=12,fig.height=7,warning=FALSE}
-library(ggplot2)
-library(dplyr)
-library(data.table)
-library(DT)
-library(jsonlite)
-library(tidyr)
-library(reshape2) 
+library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(DT) #v 0.8
+library(jsonlite) #v 1.6
+library(tidyr) #v 1.0.0
+library(reshape2) #v 1.4.3
 
 allTrigID <- readRDS("posttestAll.rds")
 
@@ -291,7 +291,7 @@ LessonDataByProblem <-
 LessonDataLess60 <- LessonDataByProblem[LessonDataByProblem$PercentCorrect<60.1,]
 lessthan60 <- LessonDataLess60$order
 
-library(kableExtra)
+library(kableExtra) #v 1.1.0
 mostMissedProblems <- read.csv("lessthan60.csv")
 kable(mostMissedProblems) %>%
    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))

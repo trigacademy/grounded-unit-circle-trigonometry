@@ -17,8 +17,8 @@ The code in the following analyses uses the following data frames: pretest.rds, 
 # Can SM score predict posttest performance?
 ```{r,message=FALSE,warning=FALSE}
 
-library(lme4)
-library(dplyr)
+library(lme4) #v 1.1.21
+library(dplyr) #v 0.8.3
 
 userIDs <- read.csv("combinedUserIDs.csv")
 #exclude those who didn't meet threshold

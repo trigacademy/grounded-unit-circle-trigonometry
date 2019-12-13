@@ -22,13 +22,13 @@ Click on the "code" button beside each hashtag to see the code used to transform
 This code provides the process used to obtain the "pretest.rds" file. To execute this code, download the "REPandEarlyHS.csv", "LateHS.csv", and "combinedUserIDs" files, then run the code on your computer. 
 
 ```{r,eval=F,echo=T}
-library(ggplot2)
-library(dplyr)
-library(data.table)
-library(jsonlite)
-library(magrittr)
-library(rvest)
-library(tidyr)
+library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(jsonlite) #v 1.6
+library(magrittr) #v 1.5
+library(rvest) #v 0.3.4
+library(tidyr) #v 1.0.0
 
 
 userIDs <- read.csv("combinedUserIDs.csv")
@@ -808,11 +808,11 @@ This code provides the process used to obtain the "lesson.rds" file. To execute 
 
 
 ```{r,eval=F,echo=T}
-library(ggplot2)
-library(dplyr)
-library(data.table)
-library(DT)
-library(jsonlite)
+library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(DT) #v 0.8
+library(jsonlite) #v 1.6
 
 
 #trig academy users
@@ -1154,13 +1154,13 @@ saveRDS(AllChaptersDetail,"lesson.rds")
 This code provides the process used to obtain the "posttestAll.rds" file. To execute this code, download the "REPandEarlyHS.csv", "LateHS.csv", and "combinedUserIDs" files, then run the code on your computer. 
 
 ```{r,eval=F,echo=T}
-library(ggplot2)
-library(dplyr)
-library(data.table)
-library(jsonlite)
-library(magrittr)
-library(rvest)
-library(tidyr)
+library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(jsonlite) #v 1.6
+library(magrittr) #v 1.5
+library(rvest) #v 0.3.4
+library(tidyr) #v 1.0.0
 
 
 userIDs <- read.csv("combinedUserIDs.csv")
@@ -1362,13 +1362,13 @@ This code provides the process used to obtain the "posttest39.rds" file. To exec
 
 ```{r,eval=F,echo=T}
 
-library(ggplot2)
-library(dplyr)
-library(data.table)
-library(jsonlite)
-library(magrittr)
-library(rvest)
-library(tidyr)
+library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(jsonlite) #v 1.6
+library(magrittr) #v 1.5
+library(rvest) #v 0.3.4
+library(tidyr) #v 1.0.0
 
 userIDs <- read.csv("combinedUserIDs.csv")
 #exclude those who didn't meet threshold

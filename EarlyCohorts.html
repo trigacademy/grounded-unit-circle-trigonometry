@@ -1728,8 +1728,8 @@ div.tocify {
 <p>The code in the following analyses uses the following data frames: pretest.rds, lesson.rds, and posttestAll.rds. The raw data can be downloaded from the “Materials” tab, and the process used to get the raw data into the pretest.rds, lesson.rds, and posttestAll.rds format can be found in the “Data Process” tab.</p>
 <div id="can-sm-score-predict-posttest-performance" class="section level1">
 <h1>Can SM score predict posttest performance?</h1>
-<pre class="r"><code>library(lme4)
-library(dplyr)
+<pre class="r"><code>library(lme4) #v 1.1.21
+library(dplyr) #v 0.8.3
 
 userIDs &lt;- read.csv(&quot;combinedUserIDs.csv&quot;)
 #exclude those who didn't meet threshold

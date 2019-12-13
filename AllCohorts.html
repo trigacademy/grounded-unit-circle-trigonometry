@@ -1738,13 +1738,13 @@ div.tocify {
 <div id="which-ti-problems-were-most-difficult" class="section level1">
 <h1>Which TI problems were most difficult?</h1>
 <p>We looked at the pattern of performance on each of the 20 types of trigonometric identity problems, broken down into 3 groups - bottom, middle, top - based on performance on TI1.</p>
-<pre class="r"><code>library(ggplot2)
-library(dplyr)
-library(data.table)
-library(DT)
-library(jsonlite)
-library(tidyr)
-library(reshape2) 
+<pre class="r"><code>library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(DT) #v 0.8
+library(jsonlite) #v 1.6
+library(tidyr) #v 1.0.0
+library(reshape2) #v 1.4.3
 
 allTrigID &lt;- readRDS(&quot;posttestAll.rds&quot;)
 
@@ -2000,7 +2000,7 @@ LessonDataByProblem &lt;-
 LessonDataLess60 &lt;- LessonDataByProblem[LessonDataByProblem$PercentCorrect&lt;60.1,]
 lessthan60 &lt;- LessonDataLess60$order
 
-library(kableExtra)
+library(kableExtra) #v 1.1.0
 mostMissedProblems &lt;- read.csv(&quot;lessthan60.csv&quot;)
 kable(mostMissedProblems) %&gt;%
    kable_styling(bootstrap_options = c(&quot;striped&quot;, &quot;hover&quot;, &quot;condensed&quot;, &quot;responsive&quot;))</code></pre>

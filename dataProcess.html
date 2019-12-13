@@ -1729,13 +1729,13 @@ div.tocify {
 <div id="pretest.rds" class="section level1">
 <h1>#pretest.rds</h1>
 <p>This code provides the process used to obtain the “pretest.rds” file. To execute this code, download the “REPandEarlyHS.csv”, “LateHS.csv”, and “combinedUserIDs” files, then run the code on your computer.</p>
-<pre class="r"><code>library(ggplot2)
-library(dplyr)
-library(data.table)
-library(jsonlite)
-library(magrittr)
-library(rvest)
-library(tidyr)
+<pre class="r"><code>library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(jsonlite) #v 1.6
+library(magrittr) #v 1.5
+library(rvest) #v 0.3.4
+library(tidyr) #v 1.0.0
 
 
 userIDs &lt;- read.csv(&quot;combinedUserIDs.csv&quot;)
@@ -2508,11 +2508,11 @@ saveRDS(pretestResults,&quot;pretest.rds&quot;)</code></pre>
 <div id="lesson.rds" class="section level1">
 <h1>#lesson.rds</h1>
 <p>This code provides the process used to obtain the “lesson.rds” file. To execute this code, download the “REPandEarlyHS.csv”, “LateHS.csv”, and “combinedUserIDs” files, then run the code on your computer.</p>
-<pre class="r"><code>library(ggplot2)
-library(dplyr)
-library(data.table)
-library(DT)
-library(jsonlite)
+<pre class="r"><code>library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(DT) #v 0.8
+library(jsonlite) #v 1.6
 
 
 #trig academy users
@@ -2847,13 +2847,13 @@ saveRDS(AllChaptersDetail,&quot;lesson.rds&quot;)</code></pre>
 <div id="posttestall.rds" class="section level1">
 <h1>#posttestAll.rds</h1>
 <p>This code provides the process used to obtain the “posttestAll.rds” file. To execute this code, download the “REPandEarlyHS.csv”, “LateHS.csv”, and “combinedUserIDs” files, then run the code on your computer.</p>
-<pre class="r"><code>library(ggplot2)
-library(dplyr)
-library(data.table)
-library(jsonlite)
-library(magrittr)
-library(rvest)
-library(tidyr)
+<pre class="r"><code>library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(jsonlite) #v 1.6
+library(magrittr) #v 1.5
+library(rvest) #v 0.3.4
+library(tidyr) #v 1.0.0
 
 
 userIDs &lt;- read.csv(&quot;combinedUserIDs.csv&quot;)
@@ -3048,13 +3048,13 @@ saveRDS(trigIDResultsDetail,&quot;posttestAll.rds&quot;)
 <div id="posttest39.rds" class="section level1">
 <h1>#posttest39.rds</h1>
 <p>This code provides the process used to obtain the “posttest39.rds” file. To execute this code, download the “REPandEarlyHS.csv” and “combinedUserIDs” files, then run the code on your computer.</p>
-<pre class="r"><code>library(ggplot2)
-library(dplyr)
-library(data.table)
-library(jsonlite)
-library(magrittr)
-library(rvest)
-library(tidyr)
+<pre class="r"><code>library(ggplot2) #v 3.2.1
+library(dplyr) #v 0.8.3
+library(data.table) #v 1.12.2
+library(jsonlite) #v 1.6
+library(magrittr) #v 1.5
+library(rvest) #v 0.3.4
+library(tidyr) #v 1.0.0
 
 userIDs &lt;- read.csv(&quot;combinedUserIDs.csv&quot;)
 #exclude those who didn't meet threshold

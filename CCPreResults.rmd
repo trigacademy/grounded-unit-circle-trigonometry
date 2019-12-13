@@ -19,7 +19,7 @@ Community college students who participated in our studies were recruited from a
 These students' scores on each section of the AMSA and prescreen can be found in the downloadable .csv file below. The raw data can be found on GitHub in the "allREPResults.rds" and "PrescreenResultsFall16-Fall18.csv" files and the code used to process the raw data file into the .csv file below can be found in the "REPPrescreenPretestDataProcess.R" file. 
 
 ```{r}
-library(magrittr)
+library(magrittr) #v 1.5
 readLines("allREPPrescreenPretestResults.csv") %>% 
   paste0(collapse="\n") %>% 
   openssl::base64_encode() -> encoded
@@ -28,7 +28,7 @@ readLines("allREPPrescreenPretestResults.csv") %>%
 <a download="allREPPrescreenPretestResults.csv" href="`r sprintf('data:text/csv;base64,%s', encoded)`">Download All CC Prescreen/Pretest Results (n=1967)</a>
 
 ```{r}
-library(magrittr)
+library(magrittr) #v 1.5
 readLines("MathPrescreenKey.csv") %>% 
   paste0(collapse="\n") %>% 
   openssl::base64_encode() -> encoded
