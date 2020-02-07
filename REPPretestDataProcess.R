@@ -648,23 +648,3 @@ pretestResults <- list(prePage1sum,prePage2sum,prePage3Both,prePage4Both,prePage
   Reduce(function(dtf1,dtf2) inner_join(dtf1,dtf2,by="user"), .)
 
 
-
-#read in prescreen
-prescreen <- read.csv('PrescreenResultsFall16-Fall18.csv')
-
-
-##remove some variables
-prescreen <- prescreen[,c(2:14,20:21)]
-
-##reorder remaining variables
-prescreen <- prescreen[c("user","math1", "math2", "math3", "math4", "math5", "math6", "math7", "math8", "math9", "chairparts",  "spatialrel", "diagrams","howmanymath","mathposthigh")]
-
-##rename variables (ga: general attitude; ma: math attitude; sa: spatial attitude)
-colnames(prescreen) <- c("user","MA.GoodatMath", "MA.ImportantDoWell", "MA.NaturallyBetter", "MA.EffortImportant", "MA.UnderstandQuickly", "MA.ThinkCarefully", "MA.PlugInNum", "MA.PatternsOverCalc", "MA.ExcitingIntimidating", "SA.ChairParts", "SA.SpatialRel", "SA.Diagrams","HSMath","PostHSMath")
-
-##combine results
-allREPPrescreenPretestResults <- merge(pretestResults,prescreen,by="user")
-
-##save as .csv
-write.csv(allREPPrescreenPretestResults, "allREPPrescreenPretestResults.csv")
-

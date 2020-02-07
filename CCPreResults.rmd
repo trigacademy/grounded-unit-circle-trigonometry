@@ -14,18 +14,18 @@ output:
 ---
 # Community College Prescreen & Pretest Results
 
-Community college students who participated in our studies were recruited from a larger pool of students who took our Aptitude and Math Skills Assessment (AMSA) as part of the Research Experience Program (REP) at their school. This AMSA consisted of a battery of tasks that can be divided into the following four categories: aptitude tasks, basic math tasks, supported math tasks, and trigonometry-specific math tasks. Students also answered demographic questions as well as questions about their math attitude and spatial abilities. The purpose of the AMSA was to help our team identify ability and/or preparation related factors that may predict how well students would perform on our materials and give us the opportunity to provide additional support to students who may not have the requisite skills needed to succeed on our existing curriculum. Between fall 2016 and fall 2018, we collected complete pretest and prescreen results for 1,967 students. 
+Community college students who participated in our studies were recruited from a larger pool of students who took our Aptitude and Math Skills Assessment (AMSA) as part of the Research Experience Program (REP) at their school. This AMSA consisted of a battery of tasks that can be divided into the following four categories: aptitude tasks, basic math tasks, supported math tasks, and trigonometry-specific math tasks. Students also answered demographic questions as well as questions about their math attitude and spatial abilities. The purpose of the AMSA was to help our team identify ability and/or preparation related factors that may predict how well students would perform on our materials and give us the opportunity to provide additional support to students who may not have the requisite skills needed to succeed on our existing curriculum. Between fall 2016 and fall 2018, we collected complete pretest and prescreen results for 1,908 students. 
 
-These students' scores on each section of the AMSA and prescreen can be found in the downloadable .csv file below. The raw data can be found on GitHub in the "allREPResults.rds" and "PrescreenResultsFall16-Fall18.csv" files and the code used to process the raw data file into the .csv file below can be found in the "REPPrescreenPretestDataProcess.R" file. 
+These students' scores on each section of the AMSA and prescreen can be found in the downloadable .csv file below. The raw data can be found on GitHub in the "allREPResults.rds" file and the "Prescreen" folder, and the code used to process the raw data files into the .csv file below can be found in the "REPPretestDataProcess.R" file and the "REPPrescreenDataProcess.R" file. 
 
 ```{r}
 library(magrittr) #v 1.5
-readLines("allREPPrescreenPretestResults.csv") %>% 
+readLines("REPPretestPrescreen2-4-20.csv") %>% 
   paste0(collapse="\n") %>% 
   openssl::base64_encode() -> encoded
 ```
 
-<a download="allREPPrescreenPretestResults.csv" href="`r sprintf('data:text/csv;base64,%s', encoded)`">Download All CC Prescreen/Pretest Results (n=1967)</a>
+<a download="allREPPrescreenPretestResults.csv" href="`r sprintf('data:text/csv;base64,%s', encoded)`">Download All CC Prescreen/Pretest Results (n=1908)</a>
 
 ```{r}
 library(magrittr) #v 1.5
